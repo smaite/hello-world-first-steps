@@ -11,7 +11,7 @@
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
  import { Badge } from '@/components/ui/badge';
  import { useToast } from '@/hooks/use-toast';
- import { DollarSign, TrendingUp, Users, Plus } from 'lucide-react';
+ import { DollarSign, TrendingUp, Users, Plus, CheckCircle } from 'lucide-react';
  import { format } from 'date-fns';
  import type { Database } from '@/integrations/supabase/types';
  
