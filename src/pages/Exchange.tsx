@@ -424,16 +424,13 @@ const Exchange = () => {
               )}
             </div>
 
-            {/* Customer Selection */}
+            {/* Customer Name */}
             <div className="space-y-2">
-              <Label>Customer (Optional)</Label>
-              <CustomerSearchSelect
-                customers={customers}
+              <Label>Customer Name (Optional)</Label>
+              <Input
+                placeholder="Enter customer name"
                 value={selectedCustomer}
-                onValueChange={setSelectedCustomer}
-                onCustomerAdded={(newCustomer) => {
-                  setCustomers(prev => [...prev, newCustomer].sort((a, b) => a.name.localeCompare(b.name)));
-                }}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
               />
             </div>
 
