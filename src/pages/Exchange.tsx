@@ -199,21 +199,20 @@ const Exchange = () => {
       if (error) throw error;
 
       // If it's a credit transaction, update customer credit balance
-      if (isCredit && selectedCustomer) {
-        const customer = customers.find(c => c.id === selectedCustomer);
+      if (isCredit && customerId) {
+        const customer = customers.find(c => c.id === customerId);
         if (customer) {
           const newBalance = Number(customer.credit_balance) + parseFloat(toAmount);
           
           await supabase
             .from('customers')
             .update({ credit_balance: newBalance })
-            .eq('id', selectedCustomer);
+            .eq('id', customerId);
 
-          // Record credit transaction
           await supabase
             .from('credit_transactions')
             .insert({
-              customer_id: selectedCustomer,
+              customer_id: customerId,
               staff_id: user.id,
               amount: parseFloat(toAmount),
               transaction_type: 'credit_given',
@@ -223,14 +222,12 @@ const Exchange = () => {
               notes: notes || null,
             });
 
-          // Send credit limit notification if needed
           if (customer.credit_limit > 0) {
             await sendCreditLimitAlert(customer.name, newBalance, customer.credit_limit);
           }
         }
       }
 
-      // If online payment, record bank transaction
       if (paymentMethod === 'online' && selectedBank) {
         await supabase
           .from('bank_transactions')
