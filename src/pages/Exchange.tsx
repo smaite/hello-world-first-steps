@@ -455,9 +455,9 @@ const Exchange = () => {
             {paymentMethod === 'online' && (
               <div className="space-y-4">
                 {/* Personal Account Toggle */}
-                <div className="flex items-center justify-between p-4 border rounded-lg border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/30 bg-destructive/5">
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-amber-500" />
+                    <Wallet className="h-4 w-4 text-destructive" />
                     <div>
                       <Label>My Personal Account</Label>
                       <p className="text-xs text-muted-foreground">
