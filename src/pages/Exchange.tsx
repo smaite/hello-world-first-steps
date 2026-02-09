@@ -372,59 +372,55 @@ const Exchange = () => {
                 </div>
               </div>
 
-              {/* Custom Exchange Rate */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-1">
-            <Settings2 className="h-3 w-3 text-muted-foreground" />
-                  <div>
-              <Label className="text-xs">Custom Rate</Label>
-              <p className="text-[10px] text-muted-foreground">
-                      Default: 1 {fromCurrency} = {fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr} {toCurrency}
-                    </p>
-                  </div>
-                </div>
-                <Switch checked={useCustomRate} onCheckedChange={setUseCustomRate} />
-              </div>
-
-              {useCustomRate && (
-                <div className="space-y-2">
-                  <Label>Custom Rate (1 {fromCurrency} = ? {toCurrency})</Label>
-                  <Input
-                    type="number"
-                    placeholder={`e.g., ${fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr}`}
-                    value={customRate}
-                    onChange={(e) => setCustomRate(e.target.value)}
-                    step="0.001"
-                  />
-                </div>
-              )}
-
-              {/* Manual Adjustment */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-1">
-            <PenLine className="h-3 w-3 text-muted-foreground" />
-                  <div>
-              <Label className="text-xs">Adjust Amount</Label>
-              <p className="text-[10px] text-muted-foreground">
-                      Manually enter the output amount (increase or decrease)
-                    </p>
-                  </div>
-                </div>
-                <Switch 
-                  checked={useManualAdjust} 
-                  onCheckedChange={(checked) => {
-                    setUseManualAdjust(checked);
-                    if (!checked) {
-                      // Recalculate when turning off
+              {/* Custom Rate & Adjust Amount - Compact Row */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUseCustomRate(!useCustomRate)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors",
+                    useCustomRate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Settings2 className="h-3 w-3" />
+                  Custom Rate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !useManualAdjust;
+                    setUseManualAdjust(next);
+                    if (!next) {
                       const amount = parseFloat(fromAmount);
                       if (!isNaN(amount)) {
                         const rate = getEffectiveRate();
                         setToAmount((amount * rate).toFixed(2));
                       }
                     }
-                  }} 
-                />
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors",
+                    useManualAdjust ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <PenLine className="h-3 w-3" />
+                  Adjust Amount
+                </button>
               </div>
+
+              {useCustomRate && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Custom Rate (1 {fromCurrency} = ? {toCurrency})</Label>
+                  <Input
+                    type="number"
+                    placeholder={`e.g., ${fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr}`}
+                    value={customRate}
+                    onChange={(e) => setCustomRate(e.target.value)}
+                    step="0.001"
+                    className="h-9"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Customer Selection */}
