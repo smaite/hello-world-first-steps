@@ -302,7 +302,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-1">
           <ExpenseTracker />
         </Card>
 
