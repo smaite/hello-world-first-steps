@@ -59,15 +59,18 @@
    const fetchData = async () => {
      setLoading(true);
      try {
-       // Fetch customers with credit balance
-       const { data: customersData, error: customersError } = await supabase
-         .from('customers')
-         .select('*')
-         .gt('credit_balance', 0)
-         .order('credit_balance', { ascending: false });
- 
-       if (customersError) throw customersError;
-       setCustomers(customersData || []);
+      // Fetch all customers who have or had credit
+      const { data: allCustData, error: allCustError } = await supabase
+        .from('customers')
+        .select('*')
+        .order('credit_balance', { ascending: false });
+
+      if (allCustError) throw allCustError;
+      
+      // All customers that ever had credit (balance > 0 or have credit_limit > 0 or have transactions)
+      const custWithCredit = (allCustData || []).filter(c => c.credit_balance > 0 || c.credit_limit > 0);
+      setAllCustomers(custWithCredit);
+      setCustomers(custWithCredit.filter(c => c.credit_balance > 0));
  
        // Fetch recent credit transactions
        const { data: transData, error: transError } = await supabase
