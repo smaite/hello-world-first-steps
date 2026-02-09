@@ -37,15 +37,20 @@
  const CreditManagement = () => {
    const { user } = useAuth();
    const { toast } = useToast();
-   const [customers, setCustomers] = useState<Customer[]>([]);
-   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [dialogOpen, setDialogOpen] = useState(false);
-   const [selectedCustomer, setSelectedCustomer] = useState('');
-   const [amount, setAmount] = useState('');
-   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-   const [notes, setNotes] = useState('');
-   const [submitting, setSubmitting] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [quickPayCustomer, setQuickPayCustomer] = useState<Customer | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState('');
+  const [quickPayMethod, setQuickPayMethod] = useState<PaymentMethod>('cash');
+  const [quickPaySubmitting, setQuickPaySubmitting] = useState(false);
  
    useEffect(() => {
      fetchData();
