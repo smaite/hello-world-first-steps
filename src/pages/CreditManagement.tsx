@@ -11,7 +11,7 @@
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
  import { Badge } from '@/components/ui/badge';
  import { useToast } from '@/hooks/use-toast';
- import { DollarSign, TrendingUp, Users, Plus } from 'lucide-react';
+ import { DollarSign, TrendingUp, Users, Plus, CheckCircle } from 'lucide-react';
  import { format } from 'date-fns';
  import type { Database } from '@/integrations/supabase/types';
  
@@ -37,15 +37,20 @@
  const CreditManagement = () => {
    const { user } = useAuth();
    const { toast } = useToast();
-   const [customers, setCustomers] = useState<Customer[]>([]);
-   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [dialogOpen, setDialogOpen] = useState(false);
-   const [selectedCustomer, setSelectedCustomer] = useState('');
-   const [amount, setAmount] = useState('');
-   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-   const [notes, setNotes] = useState('');
-   const [submitting, setSubmitting] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [quickPayCustomer, setQuickPayCustomer] = useState<Customer | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState('');
+  const [quickPayMethod, setQuickPayMethod] = useState<PaymentMethod>('cash');
+  const [quickPaySubmitting, setQuickPaySubmitting] = useState(false);
  
    useEffect(() => {
      fetchData();
@@ -54,15 +59,18 @@
    const fetchData = async () => {
      setLoading(true);
      try {
-       // Fetch customers with credit balance
-       const { data: customersData, error: customersError } = await supabase
-         .from('customers')
-         .select('*')
-         .gt('credit_balance', 0)
-         .order('credit_balance', { ascending: false });
- 
-       if (customersError) throw customersError;
-       setCustomers(customersData || []);
+      // Fetch all customers who have or had credit
+      const { data: allCustData, error: allCustError } = await supabase
+        .from('customers')
+        .select('*')
+        .order('credit_balance', { ascending: false });
+
+      if (allCustError) throw allCustError;
+      
+      // All customers that ever had credit (balance > 0 or have credit_limit > 0 or have transactions)
+      const custWithCredit = (allCustData || []).filter(c => c.credit_balance > 0 || c.credit_limit > 0);
+      setAllCustomers(custWithCredit);
+      setCustomers(custWithCredit.filter(c => c.credit_balance > 0));
  
        // Fetch recent credit transactions
        const { data: transData, error: transError } = await supabase
@@ -155,7 +163,54 @@
      setNotes('');
    };
  
-   const totalCredit = customers.reduce((sum, c) => sum + c.credit_balance, 0);
+  const handleQuickPay = async (fullAmount: boolean = false) => {
+    if (!user || !quickPayCustomer) return;
+    
+    const payAmt = fullAmount ? quickPayCustomer.credit_balance : parseFloat(quickPayAmount);
+    if (isNaN(payAmt) || payAmt <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+
+    setQuickPaySubmitting(true);
+    try {
+      const actualPayment = Math.min(payAmt, quickPayCustomer.credit_balance);
+      const newBalance = quickPayCustomer.credit_balance - actualPayment;
+
+      const { error: updateError } = await supabase
+        .from('customers')
+        .update({ credit_balance: newBalance })
+        .eq('id', quickPayCustomer.id);
+      if (updateError) throw updateError;
+
+      const { error: transError } = await supabase
+        .from('credit_transactions')
+        .insert({
+          customer_id: quickPayCustomer.id,
+          staff_id: user.id,
+          amount: actualPayment,
+          transaction_type: 'credit_received',
+          payment_method: quickPayMethod,
+        });
+      if (transError) throw transError;
+
+      toast({
+        title: newBalance === 0 ? 'Fully Paid!' : 'Payment Recorded',
+        description: `Rs ${actualPayment.toLocaleString()} received from ${quickPayCustomer.name}${newBalance === 0 ? ' — Credit cleared' : ''}`,
+      });
+
+      setQuickPayCustomer(null);
+      setQuickPayAmount('');
+      fetchData();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setQuickPaySubmitting(false);
+    }
+  };
+
+  const totalCredit = customers.reduce((sum, c) => sum + c.credit_balance, 0);
+  const paidCustomers = allCustomers.filter(c => c.credit_balance === 0);
  
    return (
      <div className="space-y-6">
@@ -290,66 +345,100 @@
          </Card>
        </div>
  
-       {/* Customers with Credit */}
-       <Card>
-         <CardHeader>
-           <CardTitle>Customers with Outstanding Credit</CardTitle>
-           <CardDescription>Customers who have pending credit balances</CardDescription>
-         </CardHeader>
-         <CardContent>
-           <Table>
-             <TableHeader>
-               <TableRow>
-                 <TableHead>Customer Name</TableHead>
-                 <TableHead className="text-right">Credit Balance</TableHead>
-                 <TableHead className="text-right">Credit Limit</TableHead>
-                 <TableHead>Status</TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {loading ? (
-                 <TableRow>
-                   <TableCell colSpan={4} className="text-center py-8">
-                     Loading...
-                   </TableCell>
-                 </TableRow>
-               ) : customers.length === 0 ? (
-                 <TableRow>
-                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                     No customers with credit balance
-                   </TableCell>
-                 </TableRow>
-               ) : (
-                 customers.map((customer) => {
-                   const utilizationPercent = customer.credit_limit > 0
-                     ? (customer.credit_balance / customer.credit_limit) * 100
-                     : 0;
-                   return (
-                     <TableRow key={customer.id}>
-                       <TableCell className="font-medium">{customer.name}</TableCell>
-                       <TableCell className="text-right font-bold text-destructive">
-                         रू {customer.credit_balance.toLocaleString()}
-                       </TableCell>
-                       <TableCell className="text-right">
-                         रू {customer.credit_limit.toLocaleString()}
-                       </TableCell>
-                       <TableCell>
-                         {utilizationPercent >= 90 ? (
-                           <Badge variant="destructive">Near Limit</Badge>
-                         ) : utilizationPercent >= 70 ? (
-                           <Badge className="bg-yellow-500">Warning</Badge>
-                         ) : (
-                           <Badge variant="secondary">Normal</Badge>
-                         )}
-                       </TableCell>
-                     </TableRow>
-                   );
-                 })
-               )}
-             </TableBody>
-           </Table>
-         </CardContent>
-       </Card>
+        {/* Customers with Credit */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Credit Customers</CardTitle>
+            <CardDescription>All customers with credit accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead className="text-right">Credit Balance</TableHead>
+                  <TableHead className="text-right">Credit Limit</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : allCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No credit customers
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  allCustomers.map((customer) => {
+                    const isPaid = customer.credit_balance === 0;
+                    const utilizationPercent = customer.credit_limit > 0
+                      ? (customer.credit_balance / customer.credit_limit) * 100
+                      : 0;
+                    return (
+                      <TableRow key={customer.id}>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell className={`text-right font-bold ${isPaid ? 'text-green-600' : 'text-destructive'}`}>
+                          {isPaid ? 'Cleared' : `Rs ${customer.credit_balance.toLocaleString()}`}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          Rs {customer.credit_limit.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          {isPaid ? (
+                            <Badge variant="outline" className="border-green-500 text-green-600">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Paid
+                            </Badge>
+                          ) : utilizationPercent >= 90 ? (
+                            <Badge variant="destructive">Near Limit</Badge>
+                          ) : utilizationPercent >= 70 ? (
+                            <Badge variant="secondary">Warning</Badge>
+                          ) : (
+                            <Badge variant="outline">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {!isPaid && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setQuickPayCustomer(customer);
+                                  setQuickPayAmount(customer.credit_balance.toString());
+                                }}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Pay Full
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setQuickPayCustomer(customer);
+                                  setQuickPayAmount('');
+                                }}
+                              >
+                                Partial
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
  
        {/* Recent Transactions */}
        <Card>
@@ -395,8 +484,62 @@
              </TableBody>
            </Table>
          </CardContent>
-       </Card>
-     </div>
+        </Card>
+
+        {/* Quick Pay Dialog */}
+        <Dialog open={!!quickPayCustomer} onOpenChange={(open) => { if (!open) { setQuickPayCustomer(null); setQuickPayAmount(''); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Receive Payment</DialogTitle>
+              <DialogDescription>
+                {quickPayCustomer && `Record payment from ${quickPayCustomer.name} (Balance: Rs ${quickPayCustomer.credit_balance.toLocaleString()})`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  value={quickPayAmount}
+                  onChange={(e) => setQuickPayAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+                {quickPayCustomer && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto"
+                    onClick={() => setQuickPayAmount(quickPayCustomer.credit_balance.toString())}
+                  >
+                    Pay full amount (Rs {quickPayCustomer.credit_balance.toLocaleString()})
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Payment Method</Label>
+                <Select value={quickPayMethod} onValueChange={(v) => setQuickPayMethod(v as PaymentMethod)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="online">Online Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setQuickPayCustomer(null); setQuickPayAmount(''); }}>
+                Cancel
+              </Button>
+              <Button onClick={() => handleQuickPay()} disabled={quickPaySubmitting}>
+                {quickPaySubmitting ? 'Processing...' : 'Record Payment'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
    );
  };
  
