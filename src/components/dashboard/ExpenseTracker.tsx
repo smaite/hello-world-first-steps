@@ -241,7 +241,7 @@ export const ExpenseTracker = ({ compact = false }: { compact?: boolean }) => {
               {categoryLabel} Deduction
             </DialogTitle>
             <DialogDescription>
-              Main balance se paisa kam hoga. Slip upload karein.
+              Amount will be deducted from main balance. Upload slip.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
