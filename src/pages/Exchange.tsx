@@ -169,11 +169,18 @@ const Exchange = () => {
       
       const txType: TransactionType = transactionType === 'sell' ? 'sell' : 'buy';
 
+      // Find customer by name if provided
+      let customerId: string | null = null;
+      if (selectedCustomer.trim()) {
+        const matchedCustomer = customers.find(c => c.name.toLowerCase() === selectedCustomer.trim().toLowerCase());
+        customerId = matchedCustomer?.id || null;
+      }
+
       const { data, error } = await supabase
         .from('transactions')
         .insert({
           staff_id: user.id,
-          customer_id: selectedCustomer || null,
+          customer_id: customerId,
           transaction_type: txType,
           from_currency: fromCurrency,
           to_currency: toCurrency,
