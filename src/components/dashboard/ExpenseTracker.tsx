@@ -247,7 +247,7 @@ export const ExpenseTracker = ({ compact = false }: { compact?: boolean }) => {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-3">
               <div className="space-y-2">
-                <Label>Kis naam se? *</Label>
+                <Label>Recipient Name *</Label>
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
