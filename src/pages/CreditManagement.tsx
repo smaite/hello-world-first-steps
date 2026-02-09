@@ -484,8 +484,62 @@
              </TableBody>
            </Table>
          </CardContent>
-       </Card>
-     </div>
+        </Card>
+
+        {/* Quick Pay Dialog */}
+        <Dialog open={!!quickPayCustomer} onOpenChange={(open) => { if (!open) { setQuickPayCustomer(null); setQuickPayAmount(''); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Receive Payment</DialogTitle>
+              <DialogDescription>
+                {quickPayCustomer && `Record payment from ${quickPayCustomer.name} (Balance: Rs ${quickPayCustomer.credit_balance.toLocaleString()})`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  value={quickPayAmount}
+                  onChange={(e) => setQuickPayAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+                {quickPayCustomer && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto"
+                    onClick={() => setQuickPayAmount(quickPayCustomer.credit_balance.toString())}
+                  >
+                    Pay full amount (Rs {quickPayCustomer.credit_balance.toLocaleString()})
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Payment Method</Label>
+                <Select value={quickPayMethod} onValueChange={(v) => setQuickPayMethod(v as PaymentMethod)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="online">Online Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setQuickPayCustomer(null); setQuickPayAmount(''); }}>
+                Cancel
+              </Button>
+              <Button onClick={() => handleQuickPay()} disabled={quickPaySubmitting}>
+                {quickPaySubmitting ? 'Processing...' : 'Record Payment'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
    );
  };
  
