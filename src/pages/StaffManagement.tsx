@@ -910,16 +910,44 @@ const StaffManagement = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {isOwner() && member.role === 'staff' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openPermissionsDialog(member)}
-                        >
-                          <Shield className="h-4 w-4 mr-1" />
-                          Permissions
-                        </Button>
-                      )}
+                      <div className="flex items-center justify-end gap-1">
+                        {isOwner() && member.role === 'staff' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openPermissionsDialog(member)}
+                          >
+                            <Shield className="h-4 w-4 mr-1" />
+                            Permissions
+                          </Button>
+                        )}
+                        {isOwner() && member.id !== user?.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete {member.full_name}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently remove this staff member and all their data. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRejectUser(member.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
