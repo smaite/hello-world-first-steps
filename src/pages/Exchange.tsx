@@ -241,7 +241,6 @@ const Exchange = () => {
       }
 
       // Store last transaction for printing
-      const customer = customers.find(c => c.id === selectedCustomer);
       setLastTransaction({
         id: data.id,
         date: new Date(),
@@ -251,7 +250,7 @@ const Exchange = () => {
         fromAmount: parseFloat(fromAmount),
         toAmount: parseFloat(toAmount),
         exchangeRate: rate,
-        customerName: customer?.name,
+        customerName: selectedCustomer.trim() || 'Walk-in',
         paymentMethod,
         isCredit,
         staffName: profile?.full_name,
