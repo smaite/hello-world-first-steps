@@ -241,13 +241,13 @@ export const ExpenseTracker = ({ compact = false }: { compact?: boolean }) => {
               {categoryLabel} Deduction
             </DialogTitle>
             <DialogDescription>
-              Main balance se paisa kam hoga. Slip upload karein.
+              Amount will be deducted from main balance. Upload slip.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-3">
               <div className="space-y-2">
-                <Label>Kis naam se? *</Label>
+                <Label>Recipient Name *</Label>
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
