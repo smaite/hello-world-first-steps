@@ -163,7 +163,54 @@
      setNotes('');
    };
  
-   const totalCredit = customers.reduce((sum, c) => sum + c.credit_balance, 0);
+  const handleQuickPay = async (fullAmount: boolean = false) => {
+    if (!user || !quickPayCustomer) return;
+    
+    const payAmt = fullAmount ? quickPayCustomer.credit_balance : parseFloat(quickPayAmount);
+    if (isNaN(payAmt) || payAmt <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+
+    setQuickPaySubmitting(true);
+    try {
+      const actualPayment = Math.min(payAmt, quickPayCustomer.credit_balance);
+      const newBalance = quickPayCustomer.credit_balance - actualPayment;
+
+      const { error: updateError } = await supabase
+        .from('customers')
+        .update({ credit_balance: newBalance })
+        .eq('id', quickPayCustomer.id);
+      if (updateError) throw updateError;
+
+      const { error: transError } = await supabase
+        .from('credit_transactions')
+        .insert({
+          customer_id: quickPayCustomer.id,
+          staff_id: user.id,
+          amount: actualPayment,
+          transaction_type: 'credit_received',
+          payment_method: quickPayMethod,
+        });
+      if (transError) throw transError;
+
+      toast({
+        title: newBalance === 0 ? 'Fully Paid!' : 'Payment Recorded',
+        description: `Rs ${actualPayment.toLocaleString()} received from ${quickPayCustomer.name}${newBalance === 0 ? ' — Credit cleared' : ''}`,
+      });
+
+      setQuickPayCustomer(null);
+      setQuickPayAmount('');
+      fetchData();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setQuickPaySubmitting(false);
+    }
+  };
+
+  const totalCredit = customers.reduce((sum, c) => sum + c.credit_balance, 0);
+  const paidCustomers = allCustomers.filter(c => c.credit_balance === 0);
  
    return (
      <div className="space-y-6">
