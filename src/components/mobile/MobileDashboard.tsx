@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, subDays } from 'date-fns';
+import { Card } from '@/components/ui/card';
+import { ExpenseTracker } from '@/components/dashboard/ExpenseTracker';
 
 interface MobileDashboardProps {
   stats: {
@@ -316,6 +318,11 @@ const MobileDashboard = ({ stats, exchangeRate, loading, selectedDate, onDateCha
             <p className="text-sm font-bold text-foreground">₹{formatCurrency(stats.openingInr, 'INR')}</p>
           </div>
         </div>
+
+        {/* Expense Deductions */}
+        <Card className="rounded-xl border-border/50">
+          <ExpenseTracker compact />
+        </Card>
       </div>
 
       {/* Secondary Actions - Compact */}
