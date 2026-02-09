@@ -495,7 +495,7 @@ const Exchange = () => {
             )}
 
             {/* Credit Toggle */}
-            {selectedCustomer && (
+            {selectedCustomer.trim() && customers.some(c => c.name.toLowerCase() === selectedCustomer.trim().toLowerCase()) && (
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div>
                   <Label>Credit Transaction</Label>
