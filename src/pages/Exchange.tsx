@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomerSearchSelect } from '@/components/exchange/CustomerSearchSelect';
+import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -168,11 +169,18 @@ const Exchange = () => {
       
       const txType: TransactionType = transactionType === 'sell' ? 'sell' : 'buy';
 
+      // Find customer by name if provided
+      let customerId: string | null = null;
+      if (selectedCustomer.trim()) {
+        const matchedCustomer = customers.find(c => c.name.toLowerCase() === selectedCustomer.trim().toLowerCase());
+        customerId = matchedCustomer?.id || null;
+      }
+
       const { data, error } = await supabase
         .from('transactions')
         .insert({
           staff_id: user.id,
-          customer_id: selectedCustomer || null,
+          customer_id: customerId,
           transaction_type: txType,
           from_currency: fromCurrency,
           to_currency: toCurrency,
@@ -191,21 +199,20 @@ const Exchange = () => {
       if (error) throw error;
 
       // If it's a credit transaction, update customer credit balance
-      if (isCredit && selectedCustomer) {
-        const customer = customers.find(c => c.id === selectedCustomer);
+      if (isCredit && customerId) {
+        const customer = customers.find(c => c.id === customerId);
         if (customer) {
           const newBalance = Number(customer.credit_balance) + parseFloat(toAmount);
           
           await supabase
             .from('customers')
             .update({ credit_balance: newBalance })
-            .eq('id', selectedCustomer);
+            .eq('id', customerId);
 
-          // Record credit transaction
           await supabase
             .from('credit_transactions')
             .insert({
-              customer_id: selectedCustomer,
+              customer_id: customerId,
               staff_id: user.id,
               amount: parseFloat(toAmount),
               transaction_type: 'credit_given',
@@ -215,14 +222,12 @@ const Exchange = () => {
               notes: notes || null,
             });
 
-          // Send credit limit notification if needed
           if (customer.credit_limit > 0) {
             await sendCreditLimitAlert(customer.name, newBalance, customer.credit_limit);
           }
         }
       }
 
-      // If online payment, record bank transaction
       if (paymentMethod === 'online' && selectedBank) {
         await supabase
           .from('bank_transactions')
@@ -236,7 +241,6 @@ const Exchange = () => {
       }
 
       // Store last transaction for printing
-      const customer = customers.find(c => c.id === selectedCustomer);
       setLastTransaction({
         id: data.id,
         date: new Date(),
@@ -246,7 +250,7 @@ const Exchange = () => {
         fromAmount: parseFloat(fromAmount),
         toAmount: parseFloat(toAmount),
         exchangeRate: rate,
-        customerName: customer?.name,
+        customerName: selectedCustomer.trim() || 'Walk-in',
         paymentMethod,
         isCredit,
         staffName: profile?.full_name,
@@ -372,71 +376,64 @@ const Exchange = () => {
                 </div>
               </div>
 
-              {/* Custom Exchange Rate */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-1">
-            <Settings2 className="h-3 w-3 text-muted-foreground" />
-                  <div>
-              <Label className="text-xs">Custom Rate</Label>
-              <p className="text-[10px] text-muted-foreground">
-                      Default: 1 {fromCurrency} = {fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr} {toCurrency}
-                    </p>
-                  </div>
-                </div>
-                <Switch checked={useCustomRate} onCheckedChange={setUseCustomRate} />
-              </div>
-
-              {useCustomRate && (
-                <div className="space-y-2">
-                  <Label>Custom Rate (1 {fromCurrency} = ? {toCurrency})</Label>
-                  <Input
-                    type="number"
-                    placeholder={`e.g., ${fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr}`}
-                    value={customRate}
-                    onChange={(e) => setCustomRate(e.target.value)}
-                    step="0.001"
-                  />
-                </div>
-              )}
-
-              {/* Manual Adjustment */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-1">
-            <PenLine className="h-3 w-3 text-muted-foreground" />
-                  <div>
-              <Label className="text-xs">Adjust Amount</Label>
-              <p className="text-[10px] text-muted-foreground">
-                      Manually enter the output amount (increase or decrease)
-                    </p>
-                  </div>
-                </div>
-                <Switch 
-                  checked={useManualAdjust} 
-                  onCheckedChange={(checked) => {
-                    setUseManualAdjust(checked);
-                    if (!checked) {
-                      // Recalculate when turning off
+              {/* Custom Rate & Adjust Amount - Compact Row */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUseCustomRate(!useCustomRate)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors",
+                    useCustomRate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Settings2 className="h-3 w-3" />
+                  Custom Rate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !useManualAdjust;
+                    setUseManualAdjust(next);
+                    if (!next) {
                       const amount = parseFloat(fromAmount);
                       if (!isNaN(amount)) {
                         const rate = getEffectiveRate();
                         setToAmount((amount * rate).toFixed(2));
                       }
                     }
-                  }} 
-                />
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors",
+                    useManualAdjust ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <PenLine className="h-3 w-3" />
+                  Adjust Amount
+                </button>
               </div>
+
+              {useCustomRate && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Custom Rate (1 {fromCurrency} = ? {toCurrency})</Label>
+                  <Input
+                    type="number"
+                    placeholder={`e.g., ${fromCurrency === 'NPR' ? defaultRate.nprToInr : defaultRate.inrToNpr}`}
+                    value={customRate}
+                    onChange={(e) => setCustomRate(e.target.value)}
+                    step="0.001"
+                    className="h-9"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Customer Selection */}
+            {/* Customer Name */}
             <div className="space-y-2">
-              <Label>Customer (Optional)</Label>
-              <CustomerSearchSelect
-                customers={customers}
+              <Label>Customer Name (Optional)</Label>
+              <Input
+                placeholder="Enter customer name"
                 value={selectedCustomer}
-                onValueChange={setSelectedCustomer}
-                onCustomerAdded={(newCustomer) => {
-                  setCustomers(prev => [...prev, newCustomer].sort((a, b) => a.name.localeCompare(b.name)));
-                }}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
               />
             </div>
 
@@ -458,9 +455,9 @@ const Exchange = () => {
             {paymentMethod === 'online' && (
               <div className="space-y-4">
                 {/* Personal Account Toggle */}
-                <div className="flex items-center justify-between p-4 border rounded-lg border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/30 bg-destructive/5">
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-amber-500" />
+                    <Wallet className="h-4 w-4 text-destructive" />
                     <div>
                       <Label>My Personal Account</Label>
                       <p className="text-xs text-muted-foreground">
@@ -498,7 +495,7 @@ const Exchange = () => {
             )}
 
             {/* Credit Toggle */}
-            {selectedCustomer && (
+            {selectedCustomer.trim() && customers.some(c => c.name.toLowerCase() === selectedCustomer.trim().toLowerCase()) && (
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div>
                   <Label>Credit Transaction</Label>
