@@ -345,66 +345,100 @@
          </Card>
        </div>
  
-       {/* Customers with Credit */}
-       <Card>
-         <CardHeader>
-           <CardTitle>Customers with Outstanding Credit</CardTitle>
-           <CardDescription>Customers who have pending credit balances</CardDescription>
-         </CardHeader>
-         <CardContent>
-           <Table>
-             <TableHeader>
-               <TableRow>
-                 <TableHead>Customer Name</TableHead>
-                 <TableHead className="text-right">Credit Balance</TableHead>
-                 <TableHead className="text-right">Credit Limit</TableHead>
-                 <TableHead>Status</TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {loading ? (
-                 <TableRow>
-                   <TableCell colSpan={4} className="text-center py-8">
-                     Loading...
-                   </TableCell>
-                 </TableRow>
-               ) : customers.length === 0 ? (
-                 <TableRow>
-                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                     No customers with credit balance
-                   </TableCell>
-                 </TableRow>
-               ) : (
-                 customers.map((customer) => {
-                   const utilizationPercent = customer.credit_limit > 0
-                     ? (customer.credit_balance / customer.credit_limit) * 100
-                     : 0;
-                   return (
-                     <TableRow key={customer.id}>
-                       <TableCell className="font-medium">{customer.name}</TableCell>
-                       <TableCell className="text-right font-bold text-destructive">
-                         रू {customer.credit_balance.toLocaleString()}
-                       </TableCell>
-                       <TableCell className="text-right">
-                         रू {customer.credit_limit.toLocaleString()}
-                       </TableCell>
-                       <TableCell>
-                         {utilizationPercent >= 90 ? (
-                           <Badge variant="destructive">Near Limit</Badge>
-                         ) : utilizationPercent >= 70 ? (
-                           <Badge className="bg-yellow-500">Warning</Badge>
-                         ) : (
-                           <Badge variant="secondary">Normal</Badge>
-                         )}
-                       </TableCell>
-                     </TableRow>
-                   );
-                 })
-               )}
-             </TableBody>
-           </Table>
-         </CardContent>
-       </Card>
+        {/* Customers with Credit */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Credit Customers</CardTitle>
+            <CardDescription>All customers with credit accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead className="text-right">Credit Balance</TableHead>
+                  <TableHead className="text-right">Credit Limit</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : allCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No credit customers
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  allCustomers.map((customer) => {
+                    const isPaid = customer.credit_balance === 0;
+                    const utilizationPercent = customer.credit_limit > 0
+                      ? (customer.credit_balance / customer.credit_limit) * 100
+                      : 0;
+                    return (
+                      <TableRow key={customer.id}>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell className={`text-right font-bold ${isPaid ? 'text-green-600' : 'text-destructive'}`}>
+                          {isPaid ? 'Cleared' : `Rs ${customer.credit_balance.toLocaleString()}`}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          Rs {customer.credit_limit.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          {isPaid ? (
+                            <Badge variant="outline" className="border-green-500 text-green-600">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Paid
+                            </Badge>
+                          ) : utilizationPercent >= 90 ? (
+                            <Badge variant="destructive">Near Limit</Badge>
+                          ) : utilizationPercent >= 70 ? (
+                            <Badge variant="secondary">Warning</Badge>
+                          ) : (
+                            <Badge variant="outline">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {!isPaid && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setQuickPayCustomer(customer);
+                                  setQuickPayAmount(customer.credit_balance.toString());
+                                }}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Pay Full
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setQuickPayCustomer(customer);
+                                  setQuickPayAmount('');
+                                }}
+                              >
+                                Partial
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
  
        {/* Recent Transactions */}
        <Card>
