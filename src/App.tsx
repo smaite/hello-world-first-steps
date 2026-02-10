@@ -20,6 +20,7 @@ import MonthlyReports from "./pages/MonthlyReports";
 import StaffManagement from "./pages/StaffManagement";
 import StaffSalary from "./pages/StaffSalary";
 import Expenses from "./pages/Expenses";
+import UserActivity from "./pages/UserActivity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
