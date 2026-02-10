@@ -65,7 +65,15 @@ const StaffManagement = () => {
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState<string | null>(null);
-  
+  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [docsStaff, setDocsStaff] = useState<StaffMember | null>(null);
+  const [docsData, setDocsData] = useState<{
+    id_document_url: string | null;
+    agreement_url: string | null;
+    salary_agreement_url: string | null;
+    signed_agreement_url: string | null;
+  }>({ id_document_url: null, agreement_url: null, salary_agreement_url: null, signed_agreement_url: null });
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   // OTP generation state
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
