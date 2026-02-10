@@ -413,36 +413,37 @@ const BankAccounts = () => {
                       onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                     />
                   </div>
-                  {editingAccount && (
-                    <div className="space-y-2">
-                      <Label>QR Code</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => e.target.files && setQrFile(e.target.files[0])}
-                        />
-                        {qrFile && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleQrUpload(editingAccount.id)}
-                            disabled={uploadingQr}
-                          >
-                            <Upload className="h-4 w-4 mr-1" />
-                            {uploadingQr ? 'Uploading...' : 'Upload'}
-                          </Button>
-                        )}
-                      </div>
-                      {editingAccount.qr_code_url && !qrFile && (
-                        <img 
-                          src={editingAccount.qr_code_url} 
-                          alt="QR Code" 
-                          className="w-32 h-32 object-contain border rounded"
-                        />
+                  <div className="space-y-2">
+                    <Label>QR Code</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files && setQrFile(e.target.files[0])}
+                      />
+                      {qrFile && editingAccount && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleQrUpload(editingAccount.id)}
+                          disabled={uploadingQr}
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          {uploadingQr ? 'Uploading...' : 'Upload'}
+                        </Button>
                       )}
                     </div>
-                  )}
+                    {editingAccount?.qr_code_url && !qrFile && (
+                      <img 
+                        src={editingAccount.qr_code_url} 
+                        alt="QR Code" 
+                        className="w-32 h-32 object-contain border rounded"
+                      />
+                    )}
+                    {!editingAccount && qrFile && (
+                      <p className="text-xs text-muted-foreground">QR will be uploaded after account is created</p>
+                    )}
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>

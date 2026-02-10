@@ -26,6 +26,7 @@ import {
   Wallet,
   CreditCard,
   Receipt,
+  CalendarDays,
 } from "lucide-react";
 
 const AppSidebar = () => {
