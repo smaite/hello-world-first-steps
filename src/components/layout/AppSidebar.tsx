@@ -26,6 +26,7 @@ import {
   Wallet,
   CreditCard,
   Receipt,
+  CalendarDays,
 } from "lucide-react";
 
 const AppSidebar = () => {
@@ -64,6 +65,12 @@ const AppSidebar = () => {
       title: "Daily Reports",
       url: "/reports/daily",
       icon: FileText,
+      permission: "view_daily_reports",
+    },
+    {
+      title: "Monthly Reports",
+      url: "/reports/monthly",
+      icon: CalendarDays,
       permission: "view_daily_reports",
     },
     {

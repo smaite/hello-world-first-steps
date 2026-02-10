@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Shield, Edit, Loader2, Trash2, XCircle, KeyRound, Copy, Check, Download } from 'lucide-react';
+import { UserPlus, Shield, Edit, Loader2, Trash2, XCircle, KeyRound, Copy, Check, Download, FileUp, Eye } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +65,15 @@ const StaffManagement = () => {
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState<string | null>(null);
-  
+  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [docsStaff, setDocsStaff] = useState<StaffMember | null>(null);
+  const [docsData, setDocsData] = useState<{
+    id_document_url: string | null;
+    agreement_url: string | null;
+    salary_agreement_url: string | null;
+    signed_agreement_url: string | null;
+  }>({ id_document_url: null, agreement_url: null, salary_agreement_url: null, signed_agreement_url: null });
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   // OTP generation state
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
@@ -413,6 +421,46 @@ const StaffManagement = () => {
     acc[perm.category].push(perm);
     return acc;
   }, {} as Record<string, Permission[]>);
+
+  const openDocsDialog = async (member: StaffMember) => {
+    setDocsStaff(member);
+    setDocsDialogOpen(true);
+    // Fetch document URLs from profile
+    const { data } = await supabase.from('profiles').select('id_document_url, agreement_url, salary_agreement_url, signed_agreement_url').eq('id', member.id).single();
+    if (data) {
+      setDocsData({
+        id_document_url: data.id_document_url,
+        agreement_url: data.agreement_url,
+        salary_agreement_url: data.salary_agreement_url,
+        signed_agreement_url: data.signed_agreement_url,
+      });
+    }
+  };
+
+  const handleDocUpload = async (field: string, file: File) => {
+    if (!docsStaff) return;
+    setUploadingDoc(field);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${docsStaff.id}/${field}_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage.from('staff-documents').upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      // staff-documents is private, so we need to create a signed URL or store the path
+      const { data: { publicUrl } } = supabase.storage.from('staff-documents').getPublicUrl(fileName);
+      
+      const { error: updateError } = await supabase.from('profiles').update({ [field]: publicUrl }).eq('id', docsStaff.id);
+      if (updateError) throw updateError;
+
+      setDocsData(prev => ({ ...prev, [field]: publicUrl }));
+      toast({ title: 'Uploaded', description: 'Document uploaded successfully' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
 
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
@@ -917,6 +965,16 @@ const StaffManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {isOwner() && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDocsDialog(member)}
+                          >
+                            <FileUp className="h-4 w-4 mr-1" />
+                            Docs
+                          </Button>
+                        )}
                         {isOwner() && member.role === 'staff' && (
                           <Button
                             variant="outline"
@@ -1030,6 +1088,59 @@ const StaffManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Staff Documents Dialog */}
+      <Dialog open={docsDialogOpen} onOpenChange={(open) => { if (!open) { setDocsDialogOpen(false); setDocsStaff(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Staff Documents</DialogTitle>
+            <DialogDescription>
+              {docsStaff && `Upload documents for ${docsStaff.full_name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {[
+              { field: 'id_document_url', label: 'ID Document (Citizenship/Passport)' },
+              { field: 'agreement_url', label: 'Agreement' },
+              { field: 'salary_agreement_url', label: 'Salary Agreement' },
+              { field: 'signed_agreement_url', label: 'Signed Agreement' },
+            ].map(({ field, label }) => (
+              <div key={field} className="space-y-2">
+                <Label>{label}</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleDocUpload(field, file);
+                    }}
+                    disabled={uploadingDoc === field}
+                  />
+                  {(docsData as any)[field] && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open((docsData as any)[field], '_blank')}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {uploadingDoc === field && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Uploading...
+                  </p>
+                )}
+                {(docsData as any)[field] && (
+                  <p className="text-xs text-primary">✓ Document uploaded</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
