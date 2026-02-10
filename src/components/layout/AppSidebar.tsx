@@ -67,6 +67,12 @@ const AppSidebar = () => {
       permission: "view_daily_reports",
     },
     {
+      title: "Monthly Reports",
+      url: "/reports/monthly",
+      icon: CalendarDays,
+      permission: "view_daily_reports",
+    },
+    {
       title: "Transactions",
       url: "/reports/transactions",
       icon: Banknote,
