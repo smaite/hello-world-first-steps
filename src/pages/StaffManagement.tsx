@@ -422,6 +422,46 @@ const StaffManagement = () => {
     return acc;
   }, {} as Record<string, Permission[]>);
 
+  const openDocsDialog = async (member: StaffMember) => {
+    setDocsStaff(member);
+    setDocsDialogOpen(true);
+    // Fetch document URLs from profile
+    const { data } = await supabase.from('profiles').select('id_document_url, agreement_url, salary_agreement_url, signed_agreement_url').eq('id', member.id).single();
+    if (data) {
+      setDocsData({
+        id_document_url: data.id_document_url,
+        agreement_url: data.agreement_url,
+        salary_agreement_url: data.salary_agreement_url,
+        signed_agreement_url: data.signed_agreement_url,
+      });
+    }
+  };
+
+  const handleDocUpload = async (field: string, file: File) => {
+    if (!docsStaff) return;
+    setUploadingDoc(field);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${docsStaff.id}/${field}_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage.from('staff-documents').upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      // staff-documents is private, so we need to create a signed URL or store the path
+      const { data: { publicUrl } } = supabase.storage.from('staff-documents').getPublicUrl(fileName);
+      
+      const { error: updateError } = await supabase.from('profiles').update({ [field]: publicUrl }).eq('id', docsStaff.id);
+      if (updateError) throw updateError;
+
+      setDocsData(prev => ({ ...prev, [field]: publicUrl }));
+      toast({ title: 'Uploaded', description: 'Document uploaded successfully' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
+
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
       case 'owner': return 'default';
