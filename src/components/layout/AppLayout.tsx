@@ -8,6 +8,7 @@ import MobileBottomNav from './MobileBottomNav';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import PendingApproval from '@/pages/PendingApproval';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 const AppLayout = () => {
   const { user, loading, isPending, isOwner, isManager } = useAuth();
