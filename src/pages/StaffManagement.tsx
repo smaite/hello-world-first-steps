@@ -242,7 +242,10 @@ const StaffManagement = () => {
 
     setSaving(true);
     try {
-      // Create user via signup
+      // Save current session before creating new user
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      // Create user via signup (handle_new_user trigger creates profile + 'pending' role)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newStaff.email,
         password: newStaff.password,
@@ -257,21 +260,24 @@ const StaffManagement = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Create profile
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        full_name: newStaff.fullName,
-        email: newStaff.email,
-        phone: newStaff.phone || null,
-      });
+      // Restore the owner's session (signUp switches session)
+      if (currentSession) {
+        await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
+        });
+      }
 
-      if (profileError) throw profileError;
+      // Update phone on profile if provided
+      if (newStaff.phone) {
+        await supabase.from('profiles').update({ phone: newStaff.phone }).eq('id', authData.user.id);
+      }
 
-      // Set role
-      const { error: roleError } = await supabase.from('user_roles').insert({
-        user_id: authData.user.id,
-        role: newStaff.role,
-      });
+      // Update role from 'pending' to the selected role (trigger already created 'pending')
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .update({ role: newStaff.role })
+        .eq('user_id', authData.user.id);
 
       if (roleError) throw roleError;
 
