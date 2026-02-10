@@ -750,6 +750,51 @@ export type Database = {
           },
         ]
       }
+      user_activity: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_info: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          ip_address: string | null
+          is_online: boolean
+          last_seen_at: string
+          location: string | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_info?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_online?: boolean
+          last_seen_at?: string
+          location?: string | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_info?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          is_online?: boolean
+          last_seen_at?: string
+          location?: string | null
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
