@@ -965,6 +965,16 @@ const StaffManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {isOwner() && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDocsDialog(member)}
+                          >
+                            <FileUp className="h-4 w-4 mr-1" />
+                            Docs
+                          </Button>
+                        )}
                         {isOwner() && member.role === 'staff' && (
                           <Button
                             variant="outline"
