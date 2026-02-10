@@ -991,6 +991,21 @@ const StaffManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {isOwner() && member.id !== user?.id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleVerifyEmail(member.id)}
+                            disabled={verifyingEmail === member.id}
+                          >
+                            {verifyingEmail === member.id ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <MailCheck className="h-4 w-4 mr-1" />
+                            )}
+                            Verify
+                          </Button>
+                        )}
                         {isOwner() && (
                           <Button
                             variant="outline"
