@@ -74,6 +74,7 @@ const StaffManagement = () => {
     signed_agreement_url: string | null;
   }>({ id_document_url: null, agreement_url: null, salary_agreement_url: null, signed_agreement_url: null });
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
   // OTP generation state
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
