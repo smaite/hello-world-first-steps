@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Shield, Edit, Loader2, Trash2, XCircle, KeyRound, Copy, Check, Download, FileUp, Eye } from 'lucide-react';
+import { UserPlus, Shield, Edit, Loader2, Trash2, XCircle, KeyRound, Copy, Check, Download, FileUp, Eye, MailCheck } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +74,7 @@ const StaffManagement = () => {
     signed_agreement_url: string | null;
   }>({ id_document_url: null, agreement_url: null, salary_agreement_url: null, signed_agreement_url: null });
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
   // OTP generation state
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
@@ -459,6 +460,31 @@ const StaffManagement = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setUploadingDoc(null);
+    }
+  };
+
+  const handleVerifyEmail = async (staffId: string) => {
+    setVerifyingEmail(staffId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `https://qybimxftznjqsfselrzl.supabase.co/functions/v1/verify-user-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ user_id: staffId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      toast({ title: 'Success', description: 'Email verified successfully' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setVerifyingEmail(null);
     }
   };
 
@@ -965,6 +991,21 @@ const StaffManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {isOwner() && member.id !== user?.id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleVerifyEmail(member.id)}
+                            disabled={verifyingEmail === member.id}
+                          >
+                            {verifyingEmail === member.id ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <MailCheck className="h-4 w-4 mr-1" />
+                            )}
+                            Verify
+                          </Button>
+                        )}
                         {isOwner() && (
                           <Button
                             variant="outline"
