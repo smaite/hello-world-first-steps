@@ -221,6 +221,43 @@ const CashTracker = () => {
     }
   };
 
+  const handleDeleteDay = async () => {
+    if (!user || !todayRecord) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('staff_cash_tracker')
+        .delete()
+        .eq('id', todayRecord.id);
+
+      if (error) throw error;
+
+      setTodayRecord(null);
+      setNotes('');
+      setOpeningNprDenoms({});
+      setOpeningInrDenoms({});
+      setClosingNprDenoms({});
+      setClosingInrDenoms({});
+      setDeleteDialogOpen(false);
+
+      const prevDay = await fetchPreviousDayRecord();
+      setPreviousDayRecord(prevDay);
+
+      toast({
+        title: 'Day Deleted',
+        description: 'Today\'s cash tracker record has been deleted',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handlePrintDenomination = () => {
     printDenominationSheet({
       date: new Date(),
