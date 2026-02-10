@@ -91,6 +91,7 @@ const AppSidebar = () => {
   const adminItems = [
     { title: "Staff Management", url: "/staff", icon: UserCog },
     { title: "Staff Salary", url: "/staff/salary", icon: Wallet },
+    { title: "User Activity", url: "/activity", icon: Activity },
     { title: "Settings", url: "/settings", icon: Settings },
   ];
 
