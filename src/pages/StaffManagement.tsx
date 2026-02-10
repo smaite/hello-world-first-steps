@@ -463,6 +463,31 @@ const StaffManagement = () => {
     }
   };
 
+  const handleVerifyEmail = async (staffId: string) => {
+    setVerifyingEmail(staffId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `https://qybimxftznjqsfselrzl.supabase.co/functions/v1/verify-user-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ user_id: staffId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      toast({ title: 'Success', description: 'Email verified successfully' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setVerifyingEmail(null);
+    }
+  };
+
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
       case 'owner': return 'default';
