@@ -1088,6 +1088,59 @@ const StaffManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Staff Documents Dialog */}
+      <Dialog open={docsDialogOpen} onOpenChange={(open) => { if (!open) { setDocsDialogOpen(false); setDocsStaff(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Staff Documents</DialogTitle>
+            <DialogDescription>
+              {docsStaff && `Upload documents for ${docsStaff.full_name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {[
+              { field: 'id_document_url', label: 'ID Document (Citizenship/Passport)' },
+              { field: 'agreement_url', label: 'Agreement' },
+              { field: 'salary_agreement_url', label: 'Salary Agreement' },
+              { field: 'signed_agreement_url', label: 'Signed Agreement' },
+            ].map(({ field, label }) => (
+              <div key={field} className="space-y-2">
+                <Label>{label}</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleDocUpload(field, file);
+                    }}
+                    disabled={uploadingDoc === field}
+                  />
+                  {(docsData as any)[field] && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open((docsData as any)[field], '_blank')}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {uploadingDoc === field && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Uploading...
+                  </p>
+                )}
+                {(docsData as any)[field] && (
+                  <p className="text-xs text-primary">✓ Document uploaded</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
