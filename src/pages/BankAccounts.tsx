@@ -114,7 +114,7 @@ const BankAccounts = () => {
           description: 'Bank account has been updated',
         });
       } else {
-        const { error } = await supabase
+        const { data: newAccount, error } = await supabase
           .from('bank_accounts')
           .insert({
             name: formData.name,
@@ -124,9 +124,16 @@ const BankAccounts = () => {
             current_balance: parseFloat(formData.current_balance) || 0,
             is_active: formData.is_active,
             created_by: user.id,
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) throw error;
+
+        // Upload QR code if selected
+        if (qrFile && newAccount) {
+          await handleQrUpload(newAccount.id);
+        }
 
         toast({
           title: 'Account Added',
