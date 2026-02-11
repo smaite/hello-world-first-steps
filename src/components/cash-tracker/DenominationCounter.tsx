@@ -55,17 +55,17 @@ export const DenominationCounter = ({
   };
 
   return (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">
-        {currency} Denominations
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        {currency}
       </Label>
       <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
+        <table className="w-full text-xs sm:text-sm">
+          <thead className="bg-muted/60">
             <tr>
-              <th className="p-2 text-left">Note</th>
-              <th className="p-2 text-center">Count</th>
-              <th className="p-2 text-right">Total</th>
+              <th className="py-1.5 px-2 text-left font-medium text-muted-foreground">Note</th>
+              <th className="py-1.5 px-2 text-center font-medium text-muted-foreground">Qty</th>
+              <th className="py-1.5 px-2 text-right font-medium text-muted-foreground">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -76,9 +76,9 @@ export const DenominationCounter = ({
               const total = numValue * count;
 
               return (
-                <tr key={key} className="border-t">
-                  <td className="p-2 font-medium">{denom.label}</td>
-                  <td className="p-2">
+                <tr key={key} className="border-t border-border/50">
+                  <td className="py-1 px-2 font-medium">{denom.label}</td>
+                  <td className="py-1 px-2">
                     <Input
                       type="number"
                       min="0"
@@ -86,19 +86,19 @@ export const DenominationCounter = ({
                       onChange={(e) =>
                         handleChange(key, parseInt(e.target.value) || 0)
                       }
-                      className="w-20 text-center mx-auto"
+                      className="w-16 h-7 text-center mx-auto text-xs"
                       disabled={disabled}
                     />
                   </td>
-                  <td className="p-2 text-right font-mono">{formatNum(total)}</td>
+                  <td className="py-1 px-2 text-right font-mono text-muted-foreground">{formatNum(total)}</td>
                 </tr>
               );
             })}
           </tbody>
-          <tfoot className="bg-primary/10">
-            <tr className="border-t-2">
-              <td colSpan={2} className="p-2 font-bold">Total</td>
-              <td className="p-2 text-right font-mono font-bold text-lg">
+          <tfoot className="bg-primary/5">
+            <tr className="border-t">
+              <td colSpan={2} className="py-1.5 px-2 font-semibold text-xs">Total</td>
+              <td className="py-1.5 px-2 text-right font-mono font-bold text-sm">
                 {formatNum(calculateTotal())}
               </td>
             </tr>

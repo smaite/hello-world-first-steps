@@ -66,14 +66,14 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
   }) => (
     <tr
       className={cn(
-        'border-b last:border-b-0',
-        isTotal && 'bg-muted font-semibold',
+        'border-b border-border/40 last:border-b-0',
+        isTotal && 'bg-muted/60 font-semibold',
         isHighlight && 'bg-primary/5'
       )}
     >
       <td
         className={cn(
-          'py-2.5 px-3 text-right font-mono tabular-nums',
+          'py-1.5 px-2 sm:py-2.5 sm:px-3 text-right font-mono tabular-nums text-xs sm:text-sm',
           isTotal && 'font-bold',
           isDanger && value !== 0 && 'text-destructive',
           isSuccess && value !== 0 && 'text-green-600'
@@ -81,10 +81,10 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
       >
         {formatNum(value)}
       </td>
-      <td className={cn('py-2.5 px-3', isTotal && 'font-semibold')}>
+      <td className={cn('py-1.5 px-2 sm:py-2.5 sm:px-3 text-xs sm:text-sm', isTotal && 'font-semibold')}>
         <span>{label}</span>
         {subLabel && (
-          <span className="text-xs text-muted-foreground ml-1">({subLabel})</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">({subLabel})</span>
         )}
       </td>
     </tr>
@@ -127,12 +127,12 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* NPR Table */}
-        <div className="border rounded-lg overflow-hidden shadow-sm">
-          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold text-sm">
-            NPR Balance
+        <div className="border rounded-lg overflow-hidden">
+          <div className="bg-primary text-primary-foreground text-center py-1.5 sm:py-2.5 font-semibold text-xs sm:text-sm">
+            NPR
           </div>
           <table className="w-full text-sm">
             <tbody>
@@ -158,9 +158,9 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
         </div>
 
         {/* INR Table */}
-        <div className="border rounded-lg overflow-hidden shadow-sm">
-          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold text-sm">
-            INR Balance
+        <div className="border rounded-lg overflow-hidden">
+          <div className="bg-primary text-primary-foreground text-center py-1.5 sm:py-2.5 font-semibold text-xs sm:text-sm">
+            INR
           </div>
           <table className="w-full text-sm">
             <tbody>
