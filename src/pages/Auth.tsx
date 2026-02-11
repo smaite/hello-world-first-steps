@@ -75,18 +75,20 @@ const Auth = () => {
     try {
       const { Capacitor } = await import('@capacitor/core');
       if (Capacitor.isNativePlatform()) {
-        // On native: use Browser plugin so it can redirect back to the app
+        // On native: use in-app browser (Custom Tab) so redirect is intercepted
         const { Browser } = await import('@capacitor/browser');
+        const redirectUrl = 'https://madani.qzz.io/dashboard';
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/dashboard`,
+            redirectTo: redirectUrl,
             skipBrowserRedirect: true,
           },
         });
         if (error) throw error;
         if (data?.url) {
-          await Browser.open({ url: data.url, windowName: '_self' });
+          // No windowName - uses Android Custom Tab (in-app) instead of external Chrome
+          await Browser.open({ url: data.url });
         }
       } else {
         // On web: normal OAuth flow
