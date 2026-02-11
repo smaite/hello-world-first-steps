@@ -143,6 +143,8 @@ const CashTracker = () => {
           date: today,
           opening_npr: npr,
           opening_inr: inr,
+          opening_npr_denoms: openingNprDenoms,
+          opening_inr_denoms: openingInrDenoms,
           notes: notes || null,
         })
         .select()
