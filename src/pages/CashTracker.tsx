@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -420,18 +421,19 @@ const CashTracker = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-3 sm:space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold leading-tight">Cash Tracker</h1>
-          <p className="text-xs text-muted-foreground truncate">
+          <h1 className="text-lg sm:text-2xl font-bold leading-tight">Cash Tracker</h1>
+          <p className="text-[11px] text-muted-foreground truncate">
             {format(new Date(), 'MMM d, yyyy')} • {profile?.full_name}
           </p>
         </div>
         {todayRecord && ledgerData && (
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefreshLedger} disabled={ledgerLoading} title="Refresh">
-              <RefreshCw className={`h-4 w-4 ${ledgerLoading ? 'animate-spin' : ''}`} />
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={handleRefreshLedger} disabled={ledgerLoading} title="Refresh">
+              <RefreshCw className={`h-3.5 w-3.5 ${ledgerLoading ? 'animate-spin' : ''}`} />
             </Button>
             {!todayRecord?.is_closed && todayRecord && (
               <>
@@ -442,102 +444,80 @@ const CashTracker = () => {
                   currentNotes={todayRecord.notes}
                   onUpdate={fetchTodayRecord}
                 />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteDialogOpen(true)} title="Delete Day">
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive" onClick={() => setDeleteDialogOpen(true)} title="Delete Day">
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrintDenomination} title="Denomination">
-              <FileText className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={handlePrintDenomination} title="Denomination">
+              <FileText className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrint} title="Ledger">
-              <Printer className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={handlePrint} title="Ledger">
+              <Printer className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
       </div>
 
-      {/* Status Card */}
-      <Card className={todayRecord?.is_closed ? 'border-green-500' : 'border-yellow-500'}>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {todayRecord?.is_closed ? (
-                <>
-                  <Check className="h-5 w-5 text-green-500" />
-                  Day Closed
-                </>
-              ) : (
-                <>
-                  <Clock className="h-5 w-5 text-yellow-500" />
-                  {todayRecord ? 'Day In Progress' : 'Not Started'}
-                </>
-              )}
-            </div>
-            {todayRecord?.is_closed && (
-              <EditClosingBalanceDialog
-                recordId={todayRecord.id}
-                currentClosingNpr={todayRecord.closing_npr || 0}
-                currentClosingInr={todayRecord.closing_inr || 0}
-                onUpdate={fetchTodayRecord}
-              />
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {todayRecord?.is_closed
-              ? 'Your day has been closed. See the ledger summary below.'
-              : todayRecord
-                ? 'Enter closing denominations and view live calculations.'
-                : previousDayRecord?.is_closed
-                  ? `Previous day closing: NPR ${formatCurrency(previousDayRecord.closing_npr || 0, 'NPR')} / INR ${formatCurrency(previousDayRecord.closing_inr || 0, 'INR')}`
-                  : 'Count your cash and start your day.'}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Status Pill */}
+      <div className={cn(
+        "flex items-center justify-between rounded-lg px-3 py-2 text-sm border",
+        todayRecord?.is_closed 
+          ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400' 
+          : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-400'
+      )}>
+        <div className="flex items-center gap-2">
+          {todayRecord?.is_closed ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Clock className="h-4 w-4" />
+          )}
+          <span className="font-medium text-xs">
+            {todayRecord?.is_closed ? 'Day Closed' : todayRecord ? 'In Progress' : 'Not Started'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {todayRecord?.is_closed && (
+            <EditClosingBalanceDialog
+              recordId={todayRecord.id}
+              currentClosingNpr={todayRecord.closing_npr || 0}
+              currentClosingInr={todayRecord.closing_inr || 0}
+              onUpdate={fetchTodayRecord}
+            />
+          )}
+          {!todayRecord && previousDayRecord?.is_closed && (
+            <span className="text-[10px] text-muted-foreground">
+              Prev: {formatCurrency(previousDayRecord.closing_npr || 0, 'NPR')}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Opening Balance Form */}
       {!todayRecord && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Set Opening Balance
+        <Card className="border-border/50">
+          <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <Wallet className="h-4 w-4" />
+              Opening Balance
             </CardTitle>
-            <CardDescription>
-              Count each denomination to set your opening balance
-              {previousDayRecord?.is_closed && (
-                <span className="block text-primary mt-1">
-                  Previous closing: NPR {formatCurrency(previousDayRecord.closing_npr || 0, 'NPR')} / INR {formatCurrency(previousDayRecord.closing_inr || 0, 'INR')}
-                </span>
-              )}
-            </CardDescription>
+            {previousDayRecord?.is_closed && (
+              <CardDescription className="text-[11px]">
+                Prev: {formatCurrency(previousDayRecord.closing_npr || 0, 'NPR')} / {formatCurrency(previousDayRecord.closing_inr || 0, 'INR')}
+              </CardDescription>
+            )}
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleOpeningSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <DenominationCounter
-                  currency="NPR"
-                  denominations={openingNprDenoms}
-                  onChange={setOpeningNprDenoms}
-                />
-                <DenominationCounter
-                  currency="INR"
-                  denominations={openingInrDenoms}
-                  onChange={setOpeningInrDenoms}
-                />
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <form onSubmit={handleOpeningSubmit} className="space-y-3 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+                <DenominationCounter currency="NPR" denominations={openingNprDenoms} onChange={setOpeningNprDenoms} />
+                <DenominationCounter currency="INR" denominations={openingInrDenoms} onChange={setOpeningInrDenoms} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any notes for today..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+              <div className="space-y-1">
+                <Label htmlFor="notes" className="text-xs">Notes</Label>
+                <Textarea id="notes" placeholder="Optional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[60px] text-xs" />
               </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full h-9 text-sm" disabled={submitting}>
                 {submitting ? 'Saving...' : 'Start Day'}
               </Button>
             </form>
@@ -548,76 +528,69 @@ const CashTracker = () => {
       {/* Day Summary with Ledger */}
       {todayRecord && ledgerData && (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Today's Ledger Summary</CardTitle>
-              <CardDescription>
-                Live calculations based on all transactions
-              </CardDescription>
+          <Card className="border-border/50">
+            <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-sm sm:text-base">Ledger</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
               <LedgerSummary data={ledgerData} showActual={todayRecord.is_closed} />
             </CardContent>
           </Card>
 
           {/* Closing Balance Form */}
           {!todayRecord.is_closed && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Close Day - Count Cash</CardTitle>
-                <CardDescription>
-                  Count each denomination to set your closing balance
-                </CardDescription>
+            <Card className="border-border/50">
+              <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                <CardTitle className="text-sm sm:text-base">Close Day</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleClosingSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DenominationCounter
-                      currency="NPR"
-                      denominations={closingNprDenoms}
-                      onChange={setClosingNprDenoms}
-                    />
-                    <DenominationCounter
-                      currency="INR"
-                      denominations={closingInrDenoms}
-                      onChange={setClosingInrDenoms}
-                    />
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <form onSubmit={handleClosingSubmit} className="space-y-3 sm:space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+                    <DenominationCounter currency="NPR" denominations={closingNprDenoms} onChange={setClosingNprDenoms} />
+                    <DenominationCounter currency="INR" denominations={closingInrDenoms} onChange={setClosingInrDenoms} />
                   </div>
                   
-                  {/* Live difference preview */}
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Expected NPR (HUNU PARNE)</p>
-                      <p className="text-lg font-bold">{formatCurrency(ledgerData.hunuParneNpr, 'NPR')}</p>
-                      <p className="text-sm text-muted-foreground mt-2">Your Count</p>
-                      <p className="text-lg font-bold">{formatCurrency(calculateDenominationTotal(closingNprDenoms), 'NPR')}</p>
-                      <p className="text-sm text-muted-foreground mt-2">Difference (FARAK)</p>
-                      <p className={`text-lg font-bold ${Math.abs(ledgerData.hunuParneNpr - calculateDenominationTotal(closingNprDenoms)) > 0 ? 'text-destructive' : 'text-primary'}`}>
-                        {formatCurrency(ledgerData.hunuParneNpr - calculateDenominationTotal(closingNprDenoms), 'NPR')}
-                      </p>
+                  {/* Compact difference preview */}
+                  <div className="grid grid-cols-2 gap-2 p-2 sm:p-4 bg-muted/50 rounded-lg text-xs sm:text-sm">
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Expected NPR</p>
+                        <p className="font-bold">{formatCurrency(ledgerData.hunuParneNpr, 'NPR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Your Count</p>
+                        <p className="font-bold">{formatCurrency(calculateDenominationTotal(closingNprDenoms), 'NPR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Diff</p>
+                        <p className={`font-bold ${Math.abs(ledgerData.hunuParneNpr - calculateDenominationTotal(closingNprDenoms)) > 0 ? 'text-destructive' : 'text-primary'}`}>
+                          {formatCurrency(ledgerData.hunuParneNpr - calculateDenominationTotal(closingNprDenoms), 'NPR')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Expected INR (HUNU PARNE)</p>
-                      <p className="text-lg font-bold">{formatCurrency(ledgerData.hunuParneInr, 'INR')}</p>
-                      <p className="text-sm text-muted-foreground mt-2">Your Count</p>
-                      <p className="text-lg font-bold">{formatCurrency(calculateDenominationTotal(closingInrDenoms), 'INR')}</p>
-                      <p className="text-sm text-muted-foreground mt-2">Difference (FARAK)</p>
-                      <p className={`text-lg font-bold ${Math.abs(ledgerData.hunuParneInr - calculateDenominationTotal(closingInrDenoms)) > 0 ? 'text-destructive' : 'text-primary'}`}>
-                        {formatCurrency(ledgerData.hunuParneInr - calculateDenominationTotal(closingInrDenoms), 'INR')}
-                      </p>
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Expected INR</p>
+                        <p className="font-bold">{formatCurrency(ledgerData.hunuParneInr, 'INR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Your Count</p>
+                        <p className="font-bold">{formatCurrency(calculateDenominationTotal(closingInrDenoms), 'INR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Diff</p>
+                        <p className={`font-bold ${Math.abs(ledgerData.hunuParneInr - calculateDenominationTotal(closingInrDenoms)) > 0 ? 'text-destructive' : 'text-primary'}`}>
+                          {formatCurrency(ledgerData.hunuParneInr - calculateDenominationTotal(closingInrDenoms), 'INR')}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="closing-notes">Notes (Optional)</Label>
-                    <Textarea
-                      id="closing-notes"
-                      placeholder="Any notes about today's transactions..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
+                  <div className="space-y-1">
+                    <Label htmlFor="closing-notes" className="text-xs">Notes</Label>
+                    <Textarea id="closing-notes" placeholder="Optional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-[60px] text-xs" />
                   </div>
-                  <Button type="submit" className="w-full" disabled={submitting}>
+                  <Button type="submit" className="w-full h-9 text-sm" disabled={submitting}>
                     {submitting ? 'Closing...' : 'Close Day'}
                   </Button>
                 </form>
