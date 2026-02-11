@@ -12,6 +12,7 @@ import { format, subDays } from 'date-fns';
 import { DenominationCounter, calculateDenominationTotal } from '@/components/cash-tracker/DenominationCounter';
 import { LedgerSummary } from '@/components/cash-tracker/LedgerSummary';
 import { EditClosingBalanceDialog } from '@/components/cash-tracker/EditClosingBalanceDialog';
+import { EditOpeningBalanceDialog } from '@/components/cash-tracker/EditOpeningBalanceDialog';
 import { useDailyLedger, LedgerData } from '@/hooks/useDailyLedger';
 import { printDenominationSheet } from '@/utils/printUtils';
 
@@ -434,10 +435,19 @@ const CashTracker = () => {
               Refresh
             </Button>
             {!todayRecord?.is_closed && todayRecord && (
-              <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)} className="text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4 mr-1" />
-                Delete Day
-              </Button>
+              <>
+                <EditOpeningBalanceDialog
+                  recordId={todayRecord.id}
+                  currentOpeningNpr={todayRecord.opening_npr}
+                  currentOpeningInr={todayRecord.opening_inr}
+                  currentNotes={todayRecord.notes}
+                  onUpdate={fetchTodayRecord}
+                />
+                <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)} className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Day
+                </Button>
+              </>
             )}
             <Button variant="outline" size="sm" onClick={handlePrintDenomination}>
               <FileText className="h-4 w-4 mr-1" />
