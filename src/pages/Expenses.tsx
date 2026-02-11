@@ -4,17 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2, Trash2, Receipt, Download, FileText, Calendar } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Expense {
   id: string;
@@ -40,7 +40,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'other', label: 'Other' },
 ];
 
-type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
+type DatePreset = 'today' | 'yesterday' | 'last7days' | 'month' | 'all';
 
 const Expenses = () => {
   const { user, isOwner, isManager, hasPermission } = useAuth();
@@ -49,15 +49,18 @@ const Expenses = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [datePreset, setDatePreset] = useState<DatePreset>('today');
 
-  // Filter states
-  const [dateFilter, setDateFilter] = useState<DateFilter>('month');
-  const [customStartDate, setCustomStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [customEndDate, setCustomEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Edit state
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ description: '', amount: '', currency: 'NPR', category: 'general', expense_date: '', notes: '' });
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete state
+  const [deleteExpense, setDeleteExpense] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [newExpense, setNewExpense] = useState({
     description: '',
@@ -68,78 +71,90 @@ const Expenses = () => {
     notes: '',
   });
 
-  useEffect(() => {
-    fetchExpenses();
-  }, []);
+  const canEdit = isOwner() || isManager();
+  const canDelete = isOwner() || isManager();
+
+  useEffect(() => { fetchExpenses(); }, []);
 
   const fetchExpenses = async () => {
     setLoading(true);
     try {
-      const { data: expensesData, error: expensesError } = await supabase
+      const { data: expensesData, error } = await supabase
         .from('expenses')
         .select('*')
         .order('expense_date', { ascending: false });
+      if (error) throw error;
 
-      if (expensesError) throw expensesError;
-
-      // Fetch staff names
       const staffIds = [...new Set(expensesData?.map(e => e.staff_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', staffIds);
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', staffIds);
 
-      const expensesWithStaff = (expensesData || []).map(expense => ({
+      setExpenses((expensesData || []).map(expense => ({
         ...expense,
         staff_name: profiles?.find(p => p.id === expense.staff_id)?.full_name || 'Unknown',
-      }));
-
-      setExpenses(expensesWithStaff);
+      })));
     } catch (error: any) {
-      console.error('Error fetching expenses:', error);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter expenses based on date filter
   const filteredExpenses = useMemo(() => {
     const today = new Date();
-    
     return expenses.filter(expense => {
       const expenseDate = parseISO(expense.expense_date);
-      
-      switch (dateFilter) {
+      let dateMatch = true;
+      switch (datePreset) {
         case 'today':
-          return format(expenseDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-        case 'week':
-          return isWithinInterval(expenseDate, {
-            start: startOfWeek(today, { weekStartsOn: 0 }),
-            end: endOfWeek(today, { weekStartsOn: 0 }),
-          });
+          dateMatch = format(expenseDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+          break;
+        case 'yesterday':
+          dateMatch = format(expenseDate, 'yyyy-MM-dd') === format(subDays(today, 1), 'yyyy-MM-dd');
+          break;
+        case 'last7days':
+          dateMatch = isWithinInterval(expenseDate, { start: startOfDay(subDays(today, 6)), end: endOfDay(today) });
+          break;
         case 'month':
-          return isWithinInterval(expenseDate, {
-            start: startOfMonth(today),
-            end: endOfMonth(today),
-          });
-        case 'custom':
-          return isWithinInterval(expenseDate, {
-            start: parseISO(customStartDate),
-            end: parseISO(customEndDate),
-          });
+          dateMatch = isWithinInterval(expenseDate, { start: startOfMonth(today), end: endOfMonth(today) });
+          break;
         default:
-          return true;
+          dateMatch = true;
       }
+      const searchMatch = !searchQuery ||
+        expense.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        expense.staff_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      return dateMatch && searchMatch;
     });
-  }, [expenses, dateFilter, customStartDate, customEndDate]);
+  }, [expenses, datePreset, searchQuery]);
+
+  const totalNPR = filteredExpenses.filter(e => e.currency === 'NPR').reduce((sum, e) => sum + e.amount, 0);
+  const totalINR = filteredExpenses.filter(e => e.currency === 'INR').reduce((sum, e) => sum + e.amount, 0);
+
+  // Group by date
+  const grouped = filteredExpenses.reduce((groups, expense) => {
+    const date = expense.expense_date;
+    const label = format(parseISO(date), 'EEEE, MMMM d');
+    if (!groups[date]) groups[date] = { label, expenses: [] };
+    groups[date].expenses.push(expense);
+    return groups;
+  }, {} as Record<string, { label: string; expenses: Expense[] }>);
+
+  const getDateLabel = () => {
+    switch (datePreset) {
+      case 'today': return 'Today';
+      case 'yesterday': return 'Yesterday';
+      case 'last7days': return 'Last 7 Days';
+      case 'month': return 'This Month';
+      case 'all': return 'All Time';
+    }
+  };
 
   const handleAddExpense = async () => {
     if (!newExpense.description || !newExpense.amount) {
-      toast({ title: 'Error', description: 'Please fill in required fields', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Please fill required fields', variant: 'destructive' });
       return;
     }
-
     setSaving(true);
     try {
       const { error } = await supabase.from('expenses').insert({
@@ -151,268 +166,87 @@ const Expenses = () => {
         notes: newExpense.notes || null,
         staff_id: user!.id,
       });
-
       if (error) throw error;
-
-      toast({ title: 'Success', description: 'Expense recorded successfully' });
+      toast({ title: 'Success', description: 'Expense recorded' });
       setDialogOpen(false);
-      setNewExpense({
-        description: '',
-        amount: '',
-        currency: 'NPR',
-        category: 'general',
-        expense_date: format(new Date(), 'yyyy-MM-dd'),
-        notes: '',
-      });
+      setNewExpense({ description: '', amount: '', currency: 'NPR', category: 'general', expense_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
       fetchExpenses();
     } catch (error: any) {
-      console.error('Error adding expense:', error);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (!isOwner() && !isManager()) {
-      toast({ title: 'Error', description: 'Only owners and managers can delete expenses', variant: 'destructive' });
-      return;
-    }
+  const openEdit = (expense: Expense) => {
+    setEditExpense(expense);
+    setEditForm({
+      description: expense.description,
+      amount: expense.amount.toString(),
+      currency: expense.currency,
+      category: expense.category,
+      expense_date: expense.expense_date,
+      notes: expense.notes || '',
+    });
+    setEditDialogOpen(true);
+  };
 
-    setDeleting(id);
+  const handleEditSave = async () => {
+    if (!editExpense || !editForm.description || !editForm.amount) return;
+    setEditSaving(true);
     try {
-      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      const { error } = await supabase.from('expenses').update({
+        description: editForm.description,
+        amount: parseFloat(editForm.amount),
+        currency: editForm.currency,
+        category: editForm.category,
+        expense_date: editForm.expense_date,
+        notes: editForm.notes || null,
+      }).eq('id', editExpense.id);
       if (error) throw error;
+      toast({ title: 'Success', description: 'Expense updated' });
+      setEditDialogOpen(false);
+      setEditExpense(null);
+      fetchExpenses();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
+  const handleDelete = async () => {
+    if (!deleteExpense) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', deleteExpense.id);
+      if (error) throw error;
       toast({ title: 'Success', description: 'Expense deleted' });
       fetchExpenses();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
-      setDeleting(null);
-    }
-  };
-
-  const getCategoryBadge = (category: string) => {
-    const colors: Record<string, string> = {
-      general: 'default',
-      transport: 'secondary',
-      supplies: 'outline',
-      utilities: 'secondary',
-      maintenance: 'outline',
-      salary: 'default',
-      rent: 'secondary',
-      other: 'outline',
-    };
-    return colors[category] || 'outline';
-  };
-
-  const totalNPR = filteredExpenses.filter(e => e.currency === 'NPR').reduce((sum, e) => sum + e.amount, 0);
-  const totalINR = filteredExpenses.filter(e => e.currency === 'INR').reduce((sum, e) => sum + e.amount, 0);
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredExpenses.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredExpenses.map(e => e.id));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const handleBulkDelete = async () => {
-    if (!isOwner() && !isManager()) return;
-    
-    setBulkDeleting(true);
-    try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .in('id', selectedIds);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Expenses Deleted',
-        description: `${selectedIds.length} expense(s) removed`,
-      });
-      setSelectedIds([]);
-      setBulkDeleteOpen(false);
-      fetchExpenses();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setBulkDeleting(false);
+      setDeleting(false);
+      setDeleteExpense(null);
     }
   };
 
   // Export to CSV
   const exportToCSV = () => {
-    const toExport = selectedIds.length > 0 
-      ? filteredExpenses.filter(e => selectedIds.includes(e.id))
-      : filteredExpenses;
-
     const headers = ['Date', 'Description', 'Category', 'Amount', 'Currency', 'Recorded By', 'Notes'];
-    const rows = toExport.map(expense => [
-      format(parseISO(expense.expense_date), 'yyyy-MM-dd'),
-      expense.description,
-      expense.category,
-      expense.amount.toString(),
-      expense.currency,
-      expense.staff_name || 'Unknown',
-      expense.notes || '',
+    const rows = filteredExpenses.map(e => [
+      format(parseISO(e.expense_date), 'yyyy-MM-dd'), e.description, e.category,
+      e.amount.toString(), e.currency, e.staff_name || 'Unknown', e.notes || '',
     ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')),
-    ].join('\n');
-
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
+    link.setAttribute('href', URL.createObjectURL(blob));
     link.setAttribute('download', `expenses_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    toast({ title: 'Success', description: 'CSV exported successfully' });
-  };
-
-  // Export to PDF (print)
-  const exportToPDF = () => {
-    const getDateRangeText = () => {
-      const today = new Date();
-      switch (dateFilter) {
-        case 'today':
-          return format(today, 'dd MMMM yyyy');
-        case 'week':
-          return `${format(startOfWeek(today, { weekStartsOn: 0 }), 'dd MMM')} - ${format(endOfWeek(today, { weekStartsOn: 0 }), 'dd MMM yyyy')}`;
-        case 'month':
-          return format(today, 'MMMM yyyy');
-        case 'custom':
-          return `${format(parseISO(customStartDate), 'dd MMM yyyy')} - ${format(parseISO(customEndDate), 'dd MMM yyyy')}`;
-        default:
-          return 'All Time';
-      }
-    };
-
-    const reportHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Expense Report - ${getDateRangeText()}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; padding: 30px; max-width: 900px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-          .header h1 { font-size: 24px; margin-bottom: 5px; }
-          .header p { color: #666; }
-          .meta { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; }
-          .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-          .summary-card { padding: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
-          .summary-card h3 { font-size: 12px; color: #666; margin-bottom: 5px; }
-          .summary-card .value { font-size: 20px; font-weight: bold; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
-          th { background: #f5f5f5; font-weight: bold; }
-          .text-right { text-align: right; }
-          .category-badge { padding: 2px 8px; border-radius: 4px; background: #e5e7eb; font-size: 11px; }
-          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
-          @media print {
-            body { padding: 15px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>MADANI MONEY EXCHANGE</h1>
-          <p>Expense Report</p>
-        </div>
-
-        <div class="meta">
-          <div><strong>Period:</strong> ${getDateRangeText()}</div>
-          <div><strong>Generated:</strong> ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
-        </div>
-
-        <div class="summary-grid">
-          <div class="summary-card">
-            <h3>Total NPR Expenses</h3>
-            <div class="value">रू ${totalNPR.toLocaleString()}</div>
-          </div>
-          <div class="summary-card">
-            <h3>Total INR Expenses</h3>
-            <div class="value">₹ ${totalINR.toLocaleString()}</div>
-          </div>
-          <div class="summary-card">
-            <h3>Total Entries</h3>
-            <div class="value">${filteredExpenses.length}</div>
-          </div>
-        </div>
-
-        <h2 style="margin-bottom: 15px; font-size: 16px;">Expense Details</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th class="text-right">Amount</th>
-              <th>Recorded By</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredExpenses.map(expense => `
-              <tr>
-                <td>${format(parseISO(expense.expense_date), 'dd/MM/yyyy')}</td>
-                <td>
-                  ${expense.description}
-                  ${expense.notes ? `<br><small style="color: #666;">${expense.notes}</small>` : ''}
-                </td>
-                <td><span class="category-badge">${expense.category}</span></td>
-                <td class="text-right">${expense.currency === 'NPR' ? 'रू' : '₹'} ${expense.amount.toLocaleString()}</td>
-                <td>${expense.staff_name}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-          <tfoot>
-            <tr style="font-weight: bold; background: #f5f5f5;">
-              <td colspan="3">TOTAL</td>
-              <td class="text-right">
-                ${totalNPR > 0 ? `रू ${totalNPR.toLocaleString()}` : ''}
-                ${totalNPR > 0 && totalINR > 0 ? ' + ' : ''}
-                ${totalINR > 0 ? `₹ ${totalINR.toLocaleString()}` : ''}
-              </td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <div class="footer">
-          <p>Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
-          <p>Madani Money Exchange</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(reportHtml);
-      printWindow.document.close();
-      printWindow.onload = () => {
-        printWindow.print();
-      };
-    }
+    toast({ title: 'Success', description: 'CSV exported' });
   };
 
   if (!hasPermission('view_expenses') && !isOwner() && !isManager()) {
@@ -425,311 +259,261 @@ const Expenses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-3xl font-bold">Expenses</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Track business expenses</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{getDateLabel()} • {filteredExpenses.length} expenses</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            {selectedIds.length > 0 ? `CSV (${selectedIds.length})` : 'CSV'}
-          </Button>
-          <Button variant="outline" onClick={exportToPDF}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Expense
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Record New Expense</DialogTitle>
-                <DialogDescription>Add a new expense to the records</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Description *</Label>
-                  <Input
-                    value={newExpense.description}
-                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                    placeholder="What was this expense for?"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Amount *</Label>
-                    <Input
-                      type="number"
-                      value={newExpense.amount}
-                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Currency</Label>
-                    <Select
-                      value={newExpense.currency}
-                      onValueChange={(value) => setNewExpense({ ...newExpense, currency: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NPR">NPR</SelectItem>
-                        <SelectItem value="INR">INR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select
-                      value={newExpense.category}
-                      onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EXPENSE_CATEGORIES.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Input
-                      type="date"
-                      value={newExpense.expense_date}
-                      onChange={(e) => setNewExpense({ ...newExpense, expense_date: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea
-                    value={newExpense.notes}
-                    onChange={(e) => setNewExpense({ ...newExpense, notes: e.target.value })}
-                    placeholder="Additional notes (optional)"
-                  />
-                </div>
-                <Button onClick={handleAddExpense} className="w-full" disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Receipt className="h-4 w-4 mr-2" />}
-                  {saving ? 'Recording...' : 'Record Expense'}
-                </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" />Add Expense</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Record New Expense</DialogTitle>
+              <DialogDescription>Add a new expense to the records</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Description *</Label>
+                <Input value={newExpense.description} onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })} placeholder="What was this expense for?" />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Amount *</Label>
+                  <Input type="number" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} placeholder="0.00" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Currency</Label>
+                  <Select value={newExpense.currency} onValueChange={(v) => setNewExpense({ ...newExpense, currency: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NPR">NPR</SelectItem>
+                      <SelectItem value="INR">INR</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select value={newExpense.category} onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input type="date" value={newExpense.expense_date} onChange={(e) => setNewExpense({ ...newExpense, expense_date: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea value={newExpense.notes} onChange={(e) => setNewExpense({ ...newExpense, notes: e.target.value })} placeholder="Additional notes (optional)" />
+              </div>
+              <Button onClick={handleAddExpense} className="w-full" disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Receipt className="h-4 w-4 mr-2" />}
+                {saving ? 'Recording...' : 'Record Expense'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Bulk Actions Bar */}
-      {selectedIds.length > 0 && (
-        <Card className="border-primary">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedIds.length} expense(s) selected
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Selected
-                </Button>
-                {(isOwner() || isManager()) && (
-                  <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Selected
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
-                  Clear
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Search by description, category, or staff..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+      </div>
 
-      {/* Date Filters */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Date Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-2">
-              <Label>Period</Label>
-              <Select value={dateFilter} onValueChange={(value: DateFilter) => setDateFilter(value)}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {dateFilter === 'custom' && (
-              <>
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-40"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-40"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Filters & Actions */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button variant="outline" onClick={exportToCSV} disabled={filteredExpenses.length === 0} className="gap-2">
+          <Download className="h-4 w-4" /><span className="hidden sm:inline">CSV</span>
+        </Button>
+        <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="yesterday">Yesterday</SelectItem>
+            <SelectItem value="last7days">Last 7 Days</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="all">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total NPR Expenses</CardDescription>
-            <CardTitle className="text-2xl">रू {totalNPR.toLocaleString()}</CardTitle>
-          </CardHeader>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <Card className="border-l-4 border-l-destructive">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <ArrowDownRight className="h-4 w-4 text-destructive" />
+              <span className="text-sm text-muted-foreground">NPR Expenses</span>
+            </div>
+            <p className="text-xl font-bold text-destructive">रू {totalNPR.toLocaleString()}</p>
+          </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total INR Expenses</CardDescription>
-            <CardTitle className="text-2xl">₹ {totalINR.toLocaleString()}</CardTitle>
-          </CardHeader>
+        <Card className="border-l-4 border-l-destructive">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <ArrowDownRight className="h-4 w-4 text-destructive" />
+              <span className="text-sm text-muted-foreground">INR Expenses</span>
+            </div>
+            <p className="text-xl font-bold text-destructive">₹ {totalINR.toLocaleString()}</p>
+          </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Filtered Entries</CardDescription>
-            <CardTitle className="text-2xl">{filteredExpenses.length}</CardTitle>
-          </CardHeader>
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Entries</span>
+            </div>
+            <p className="text-xl font-bold text-primary">{filteredExpenses.length}</p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Expenses Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Expense Records</CardTitle>
-          <CardDescription>
-            {dateFilter === 'all' ? 'All expenses' : `Showing ${filteredExpenses.length} expenses for selected period`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredExpenses.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No expenses found for the selected period</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={selectedIds.length === filteredExpenses.length && filteredExpenses.length > 0}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Recorded By</TableHead>
-                  {(isOwner() || isManager()) && <TableHead className="text-right">Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(expense.id)}
-                        onCheckedChange={() => toggleSelect(expense.id)}
-                      />
-                    </TableCell>
-                    <TableCell>{format(parseISO(expense.expense_date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{expense.description}</p>
-                        {expense.notes && (
-                          <p className="text-xs text-muted-foreground">{expense.notes}</p>
-                        )}
+      {/* Grouped Expense Cards */}
+      <div className="space-y-6">
+        {loading ? (
+          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading expenses...</p></CardContent></Card>
+        ) : filteredExpenses.length === 0 ? (
+          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">No expenses found</p></CardContent></Card>
+        ) : (
+          Object.entries(grouped).map(([date, { label, expenses: dayExpenses }]) => (
+            <div key={date} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">{dayExpenses.length} expenses</span>
+              </div>
+              <div className="space-y-3">
+                {dayExpenses.map((expense) => (
+                  <div
+                    key={expense.id}
+                    className="relative flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md bg-destructive/5 border-l-4 border-l-destructive"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <Receipt className="h-5 w-5 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs capitalize">{expense.category}</Badge>
+                        <span className="text-xs text-muted-foreground">{expense.staff_name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getCategoryBadge(expense.category) as any} className="capitalize">
-                        {expense.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {expense.currency === 'NPR' ? 'रू' : '₹'} {expense.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell>{expense.staff_name}</TableCell>
-                    {(isOwner() || isManager()) && (
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          disabled={deleting === expense.id}
-                        >
-                          {deleting === expense.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
+                      <p className="font-semibold mt-1 truncate">
+                        {expense.currency === 'NPR' ? 'रू' : '₹'} {expense.amount.toLocaleString()} • {expense.description}
+                      </p>
+                      {expense.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{expense.notes}</p>}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {canEdit && (
+                          <DropdownMenuItem onClick={() => openEdit(expense)}>
+                            <Pencil className="h-4 w-4 mr-2" />Edit
+                          </DropdownMenuItem>
+                        )}
+                        {canDelete && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDeleteExpense(expense)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
-      {/* Bulk Delete Confirmation */}
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>Update expense details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Description *</Label>
+              <Input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Amount *</Label>
+                <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select value={editForm.currency} onValueChange={(v) => setEditForm({ ...editForm, currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NPR">NPR</SelectItem>
+                    <SelectItem value="INR">INR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={editForm.category} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {EXPENSE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input type="date" value={editForm.expense_date} onChange={(e) => setEditForm({ ...editForm, expense_date: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+            </div>
+            <Button onClick={handleEditSave} className="w-full" disabled={editSaving}>
+              {editSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteExpense} onOpenChange={(open) => !open && setDeleteExpense(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedIds.length} expense(s)?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Expense</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected expenses.
+              Are you sure you want to delete this expense? This action cannot be undone.
+              {deleteExpense && (
+                <div className="mt-3 p-3 bg-muted rounded-lg text-sm">
+                  <p><strong>Description:</strong> {deleteExpense.description}</p>
+                  <p><strong>Amount:</strong> {deleteExpense.currency === 'NPR' ? 'रू' : '₹'} {deleteExpense.amount.toLocaleString()}</p>
+                  <p><strong>Category:</strong> {deleteExpense.category}</p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting}>
-              {bulkDeleting ? 'Deleting...' : 'Delete'}
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
