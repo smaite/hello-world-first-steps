@@ -38,12 +38,31 @@ export function EditOpeningBalanceDialog({
   const [openingInrDenoms, setOpeningInrDenoms] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState(currentNotes || '');
 
+  const calculateDenomsFromTotal = (total: number, currency: 'NPR' | 'INR'): Record<string, number> => {
+    const denomValues = currency === 'NPR'
+      ? [1000, 500, 100, 50, 20, 10, 5]
+      : [500, 200, 100, 50, 20, 10];
+    let remaining = total;
+    const result: Record<string, number> = {};
+    for (const denom of denomValues) {
+      const count = Math.floor(remaining / denom);
+      if (count > 0) {
+        result[denom.toString()] = count;
+        remaining -= count * denom;
+      }
+    }
+    if (currency === 'INR' && remaining > 0) {
+      result['coins'] = remaining;
+    }
+    return result;
+  };
+
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
       setNotes(currentNotes || '');
-      setOpeningNprDenoms({});
-      setOpeningInrDenoms({});
+      setOpeningNprDenoms(calculateDenomsFromTotal(currentOpeningNpr, 'NPR'));
+      setOpeningInrDenoms(calculateDenomsFromTotal(currentOpeningInr, 'INR'));
     }
   };
 
