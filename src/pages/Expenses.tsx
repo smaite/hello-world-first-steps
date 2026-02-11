@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { CardListSkeleton } from '@/components/ui/page-skeleton';
 
 interface Expense {
   id: string;
@@ -380,7 +381,7 @@ const Expenses = () => {
       {/* Grouped Expense Cards */}
       <div className="space-y-6">
         {loading ? (
-          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading expenses...</p></CardContent></Card>
+          <CardListSkeleton count={4} />
         ) : filteredExpenses.length === 0 ? (
           <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">No expenses found</p></CardContent></Card>
         ) : (

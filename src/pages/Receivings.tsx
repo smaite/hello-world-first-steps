@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Send, CheckCircle, Clock, ArrowUpRight, Plus, MoreVertical, Pencil, Trash2, Search, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CardListSkeleton } from '@/components/ui/page-skeleton';
 
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'month' | 'all';
 
@@ -315,7 +316,7 @@ const Receivings = () => {
       {/* Grouped Cards */}
       <div className="space-y-6">
         {isLoading ? (
-          <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading...</p></CardContent></Card>
+          <CardListSkeleton count={4} />
         ) : filtered.length === 0 ? (
           <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">No receivings found</p></CardContent></Card>
         ) : (

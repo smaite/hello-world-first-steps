@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Shield, Edit, Loader2, Trash2, XCircle, KeyRound, Copy, Check, Download, FileUp, Eye, MailCheck } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/page-skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -910,8 +911,8 @@ const StaffManagement = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="py-4">
+              <TableSkeleton rows={4} cols={4} />
             </div>
           ) : activeStaff.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No active staff members</p>

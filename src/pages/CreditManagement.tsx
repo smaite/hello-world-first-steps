@@ -11,7 +11,8 @@
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
  import { Badge } from '@/components/ui/badge';
  import { useToast } from '@/hooks/use-toast';
- import { DollarSign, TrendingUp, Users, Plus, CheckCircle } from 'lucide-react';
+  import { DollarSign, TrendingUp, Users, Plus, CheckCircle } from 'lucide-react';
+  import { TableSkeleton } from '@/components/ui/page-skeleton';
  import { format } from 'date-fns';
  import type { Database } from '@/integrations/supabase/types';
  
@@ -364,11 +365,7 @@
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      Loading...
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeleton rows={5} cols={5} />
                 ) : allCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">

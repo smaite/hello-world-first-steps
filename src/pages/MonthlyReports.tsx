@@ -3,7 +3,8 @@
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
- import { Calendar, TrendingUp, TrendingDown, DollarSign, ArrowDownLeft, ArrowUpRight, Printer } from 'lucide-react';
+  import { Calendar, TrendingUp, TrendingDown, DollarSign, ArrowDownLeft, ArrowUpRight, Printer } from 'lucide-react';
+  import { StatCardsSkeleton } from '@/components/ui/page-skeleton';
  import { format, startOfMonth, endOfMonth } from 'date-fns';
  import { useToast } from '@/hooks/use-toast';
  
@@ -251,10 +252,11 @@
          </div>
        </div>
  
-       {loading ? (
-         <div className="flex items-center justify-center h-64">
-           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-         </div>
+        {loading ? (
+          <div className="space-y-6">
+            <StatCardsSkeleton count={4} />
+            <StatCardsSkeleton count={4} />
+          </div>
        ) : (
          <>
            {/* Transaction Summary */}

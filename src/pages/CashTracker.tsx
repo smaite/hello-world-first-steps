@@ -16,6 +16,7 @@ import { EditClosingBalanceDialog } from '@/components/cash-tracker/EditClosingB
 import { EditOpeningBalanceDialog } from '@/components/cash-tracker/EditOpeningBalanceDialog';
 import { useDailyLedger, LedgerData } from '@/hooks/useDailyLedger';
 import { printDenominationSheet } from '@/utils/printUtils';
+import { FormSkeleton } from '@/components/ui/page-skeleton';
 
 interface CashRecord {
   id: string;
@@ -415,11 +416,7 @@ const CashTracker = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (
