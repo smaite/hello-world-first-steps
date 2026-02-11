@@ -2,6 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -68,7 +71,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for deep links on native (OAuth redirect back to app)
+    let appUrlListener: any;
+    if (Capacitor.isNativePlatform()) {
+      appUrlListener = CapApp.addListener('appUrlOpen', async ({ url }) => {
+        // Extract tokens from the redirect URL hash
+        if (url.includes('access_token') || url.includes('refresh_token')) {
+          const hashPart = url.split('#')[1];
+          if (hashPart) {
+            const params = new URLSearchParams(hashPart);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            if (accessToken && refreshToken) {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            }
+          }
+        }
+        // Close the in-app browser
+        try { await Browser.close(); } catch {}
+      });
+    }
+
+    return () => {
+      subscription.unsubscribe();
+      if (appUrlListener) appUrlListener.remove();
+    };
   }, []);
 
   const fetchUserData = async (userId: string) => {
