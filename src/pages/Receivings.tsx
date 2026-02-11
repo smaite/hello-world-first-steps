@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
-import { Send, CheckCircle, Clock, ArrowUpRight, Plus, MoreVertical, Pencil, Trash2, Search, Download } from 'lucide-react';
+import { Send, CheckCircle, Clock, ArrowUpRight, Plus, MoreVertical, Pencil, Trash2, Search, Download, Wallet, TrendingDown, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CardListSkeleton } from '@/components/ui/page-skeleton';
 
@@ -66,6 +66,19 @@ const Receivings = () => {
     enabled: isAdmin,
   });
 
+  // Fetch expenses for comparison
+  const { data: allExpenses = [] } = useQuery({
+    queryKey: ['expenses-for-receivings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('expense_date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const getStaffName = (staffId: string) => profiles.find(p => p.id === staffId)?.full_name || 'Unknown';
 
   // Filter
@@ -102,6 +115,53 @@ const Receivings = () => {
   const totalNPR = filtered.filter((r: any) => r.currency === 'NPR').reduce((sum: number, r: any) => sum + Number(r.amount), 0);
   const totalINR = filtered.filter((r: any) => r.currency === 'INR').reduce((sum: number, r: any) => sum + Number(r.amount), 0);
   const pendingCount = filtered.filter((r: any) => !r.is_confirmed).length;
+
+  // Filter expenses by same date range
+  const filteredExpenses = useMemo(() => {
+    const today = new Date();
+    return allExpenses.filter((e: any) => {
+      const eDate = new Date(e.expense_date);
+      switch (datePreset) {
+        case 'today': return format(eDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+        case 'yesterday': return format(eDate, 'yyyy-MM-dd') === format(subDays(today, 1), 'yyyy-MM-dd');
+        case 'last7days': return isWithinInterval(eDate, { start: startOfDay(subDays(today, 6)), end: endOfDay(today) });
+        case 'month': return isWithinInterval(eDate, { start: startOfMonth(today), end: endOfMonth(today) });
+        default: return true;
+      }
+    });
+  }, [allExpenses, datePreset]);
+
+  const totalExpensesNPR = filteredExpenses.filter((e: any) => e.currency === 'NPR').reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+  const totalExpensesINR = filteredExpenses.filter((e: any) => e.currency === 'INR').reduce((sum: number, e: any) => sum + Number(e.amount), 0);
+  const remainingNPR = totalExpensesNPR - totalNPR;
+  const remainingINR = totalExpensesINR - totalINR;
+
+  // Per-staff breakdown
+  const staffBreakdown = useMemo(() => {
+    const staffMap = new Map<string, { expensesNPR: number; expensesINR: number; receivedNPR: number; receivedINR: number }>();
+    
+    filteredExpenses.forEach((e: any) => {
+      const entry = staffMap.get(e.staff_id) || { expensesNPR: 0, expensesINR: 0, receivedNPR: 0, receivedINR: 0 };
+      if (e.currency === 'NPR') entry.expensesNPR += Number(e.amount);
+      else entry.expensesINR += Number(e.amount);
+      staffMap.set(e.staff_id, entry);
+    });
+
+    filtered.forEach((r: any) => {
+      const entry = staffMap.get(r.staff_id) || { expensesNPR: 0, expensesINR: 0, receivedNPR: 0, receivedINR: 0 };
+      if (r.currency === 'NPR') entry.receivedNPR += Number(r.amount);
+      else entry.receivedINR += Number(r.amount);
+      staffMap.set(r.staff_id, entry);
+    });
+
+    return Array.from(staffMap.entries()).map(([staffId, data]) => ({
+      staffId,
+      name: getStaffName(staffId),
+      ...data,
+      remainingNPR: data.expensesNPR - data.receivedNPR,
+      remainingINR: data.expensesINR - data.receivedINR,
+    }));
+  }, [filteredExpenses, filtered, profiles]);
 
   // Group by date
   const grouped = filtered.reduce((groups: any, r: any) => {
@@ -273,42 +333,107 @@ const Receivings = () => {
         </Select>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Overall Summary: Expenses vs Received vs Remaining */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Expenses vs Received Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-muted text-center">
+              <Wallet className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Total Expenses</p>
+              <p className="text-lg font-bold">रू {totalExpensesNPR.toLocaleString()}</p>
+              {totalExpensesINR > 0 && <p className="text-sm font-semibold">₹ {totalExpensesINR.toLocaleString()}</p>}
+            </div>
+            <div className="p-3 rounded-lg bg-primary/10 text-center">
+              <CheckCircle className="h-4 w-4 mx-auto mb-1 text-primary" />
+              <p className="text-xs text-muted-foreground">Received</p>
+              <p className="text-lg font-bold text-primary">रू {totalNPR.toLocaleString()}</p>
+              {totalINR > 0 && <p className="text-sm font-semibold text-primary">₹ {totalINR.toLocaleString()}</p>}
+            </div>
+            <div className={cn("p-3 rounded-lg text-center", remainingNPR > 0 || remainingINR > 0 ? "bg-destructive/10" : "bg-primary/10")}>
+              <AlertTriangle className={cn("h-4 w-4 mx-auto mb-1", remainingNPR > 0 || remainingINR > 0 ? "text-destructive" : "text-primary")} />
+              <p className="text-xs text-muted-foreground">Remaining</p>
+              <p className={cn("text-lg font-bold", remainingNPR > 0 ? "text-destructive" : "text-primary")}>
+                रू {Math.abs(remainingNPR).toLocaleString()}
+              </p>
+              {(remainingINR !== 0 || totalExpensesINR > 0) && (
+                <p className={cn("text-sm font-semibold", remainingINR > 0 ? "text-destructive" : "text-primary")}>
+                  ₹ {Math.abs(remainingINR).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Per-Staff Breakdown */}
+      {isAdmin && staffBreakdown.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Per Staff Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {staffBreakdown.map((staff) => (
+              <div key={staff.staffId} className="p-3 rounded-lg border space-y-2">
+                <p className="font-semibold text-sm">{staff.name}</p>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Expenses</p>
+                    <p className="font-bold">रू {staff.expensesNPR.toLocaleString()}</p>
+                    {staff.expensesINR > 0 && <p className="font-semibold">₹ {staff.expensesINR.toLocaleString()}</p>}
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Received</p>
+                    <p className="font-bold text-primary">रू {staff.receivedNPR.toLocaleString()}</p>
+                    {staff.receivedINR > 0 && <p className="font-semibold text-primary">₹ {staff.receivedINR.toLocaleString()}</p>}
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Remaining</p>
+                    <p className={cn("font-bold", staff.remainingNPR > 0 ? "text-destructive" : "text-primary")}>
+                      रू {Math.abs(staff.remainingNPR).toLocaleString()}
+                    </p>
+                    {(staff.remainingINR !== 0 || staff.expensesINR > 0) && (
+                      <p className={cn("font-semibold", staff.remainingINR > 0 ? "text-destructive" : "text-primary")}>
+                        ₹ {Math.abs(staff.remainingINR).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-3 gap-3">
         <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <ArrowUpRight className="h-4 w-4 text-primary" />
-              <span className="text-sm text-muted-foreground">NPR Sent</span>
+              <span className="text-xs text-muted-foreground">NPR Sent</span>
             </div>
-            <p className="text-xl font-bold text-primary">रू {totalNPR.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">रू {totalNPR.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <ArrowUpRight className="h-4 w-4 text-primary" />
-              <span className="text-sm text-muted-foreground">INR Sent</span>
+              <span className="text-xs text-muted-foreground">INR Sent</span>
             </div>
-            <p className="text-xl font-bold text-primary">₹ {totalINR.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">₹ {totalINR.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-yellow-500">
+        <Card className="border-l-4 border-l-muted">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm text-muted-foreground">Pending</span>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Pending</span>
             </div>
-            <p className="text-xl font-bold">{pendingCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-green-600">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-muted-foreground">Confirmed</span>
-            </div>
-            <p className="text-xl font-bold">{filtered.length - pendingCount}</p>
+            <p className="text-lg font-bold">{pendingCount}</p>
           </CardContent>
         </Card>
       </div>
