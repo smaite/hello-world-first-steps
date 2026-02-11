@@ -83,192 +83,158 @@ const MobileDashboard = ({ stats, exchangeRate, loading, selectedDate, onDateCha
 
   return (
     <div className="min-h-screen bg-secondary/30 pb-24">
-      {/* Greeting Header - Clean white */}
-      <div className="bg-background px-5 pt-safe">
-        <div className="pt-4 pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}</p>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">{profile?.full_name || 'User'}</h1>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-sm font-semibold text-primary-foreground">
-                {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-              </span>
-            </div>
+      {/* Header + Date row combined */}
+      <div className="bg-background px-4 pt-safe">
+        <div className="pt-3 pb-2 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-muted-foreground leading-tight">
+              Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}
+            </p>
+            <h1 className="text-lg font-bold text-foreground tracking-tight leading-tight">{profile?.full_name || 'User'}</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => onDateChange(subDays(selectedDate, 1))}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="h-7 text-xs font-medium rounded-lg px-2">
+                  <CalendarIcon className="h-3 w-3 mr-1 text-muted-foreground" />
+                  {isToday ? 'Today' : format(selectedDate, 'MMM d')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && onDateChange(d)} initialFocus />
+              </PopoverContent>
+            </Popover>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => onDateChange(addDays(selectedDate, 1))} disabled={isToday}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="px-4 space-y-4 mt-2">
-        {/* Date Navigator - Pill style */}
-        <div className="flex items-center justify-between bg-background rounded-2xl p-1.5 shadow-sm">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => onDateChange(subDays(selectedDate, 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className="h-9 text-sm font-medium rounded-xl">
-                <CalendarIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                {isToday ? 'Today' : format(selectedDate, 'MMM d, yyyy')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center">
-              <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && onDateChange(d)} initialFocus />
-            </PopoverContent>
-          </Popover>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => onDateChange(addDays(selectedDate, 1))} disabled={isToday}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Exchange Rate - Clean card */}
-        <div className="bg-background rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Exchange Rates</span>
+      <div className="px-3 space-y-2.5 mt-2">
+        {/* Exchange Rate + Transactions - Inline row */}
+        <div className="flex gap-2">
+          <div className="flex-1 bg-background rounded-xl p-2.5 shadow-sm">
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Rates</span>
+            </div>
+            <div className="flex gap-3">
+              <div>
+                <p className="text-[9px] text-muted-foreground">NPR→INR</p>
+                <p className="text-sm font-bold text-foreground">1:{exchangeRate.nprToInr}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-muted-foreground">INR→NPR</p>
+                <p className="text-sm font-bold text-foreground">1:{exchangeRate.inrToNpr}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">NPR → INR</p>
-              <p className="text-2xl font-bold text-foreground tracking-tight">1:{exchangeRate.nprToInr}</p>
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">INR → NPR</p>
-              <p className="text-2xl font-bold text-foreground tracking-tight">1:{exchangeRate.inrToNpr}</p>
-            </div>
+          <div className="bg-background rounded-xl p-2.5 shadow-sm flex flex-col items-center justify-center min-w-[72px]">
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider">Txns</span>
+            <span className="text-2xl font-bold text-foreground leading-tight">{stats.todayTransactions}</span>
           </div>
         </div>
 
-        {/* Stats Overview - Apple-style grouped sections */}
-        <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
-          {/* Transactions count */}
-          <div className="px-4 py-3 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Today's Transactions</span>
-            <span className="text-2xl font-bold text-foreground">{stats.todayTransactions}</span>
-          </div>
-          <div className="h-px bg-border mx-4" />
-
-          {/* NPR */}
-          <div className="px-4 py-3">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Nepalese Rupee (NPR)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary/50 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-green-500/15 flex items-center justify-center">
-                    <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">Received</span>
-                </div>
-                <p className="text-base font-bold text-green-600">रू {fmt(stats.nprIn)}</p>
+        {/* NPR + INR Stats - Compact 2-row grid */}
+        <div className="bg-background rounded-xl shadow-sm p-2.5">
+          {/* NPR row */}
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">NPR</p>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
+              <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
+              <div>
+                <p className="text-[9px] text-muted-foreground leading-none">In</p>
+                <p className="text-xs font-bold text-green-600">रू {fmt(stats.nprIn)}</p>
               </div>
-              <div className="bg-secondary/50 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-destructive/15 flex items-center justify-center">
-                    <ArrowUpRight className="h-3 w-3 text-destructive" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">Given</span>
-                </div>
-                <p className="text-base font-bold text-destructive">रू {fmt(stats.nprOut)}</p>
+            </div>
+            <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
+              <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
+              <div>
+                <p className="text-[9px] text-muted-foreground leading-none">Out</p>
+                <p className="text-xs font-bold text-destructive">रू {fmt(stats.nprOut)}</p>
               </div>
             </div>
           </div>
-          <div className="h-px bg-border mx-4" />
-
-          {/* INR */}
-          <div className="px-4 py-3">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Indian Rupee (INR)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary/50 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-green-500/15 flex items-center justify-center">
-                    <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">Received</span>
-                </div>
-                <p className="text-base font-bold text-green-600">₹ {fmt(stats.inrIn)}</p>
+          {/* INR row */}
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">INR</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
+              <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
+              <div>
+                <p className="text-[9px] text-muted-foreground leading-none">In</p>
+                <p className="text-xs font-bold text-green-600">₹ {fmt(stats.inrIn)}</p>
               </div>
-              <div className="bg-secondary/50 rounded-xl p-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-destructive/15 flex items-center justify-center">
-                    <ArrowUpRight className="h-3 w-3 text-destructive" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">Given</span>
-                </div>
-                <p className="text-base font-bold text-destructive">₹ {fmt(stats.inrOut)}</p>
+            </div>
+            <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
+              <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
+              <div>
+                <p className="text-[9px] text-muted-foreground leading-none">Out</p>
+                <p className="text-xs font-bold text-destructive">₹ {fmt(stats.inrOut)}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Opening Balance - Minimal row */}
-        <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Opening NPR</span>
-            </div>
-            <span className="text-sm font-semibold text-foreground">रू {fmt(stats.openingNpr)}</span>
+        {/* Opening Balance - Compact inline row */}
+        <div className="bg-background rounded-xl shadow-sm p-2.5 flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <Wallet className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground">Open:</span>
+            <span className="font-semibold text-foreground">रू {fmt(stats.openingNpr)}</span>
+            <span className="text-muted-foreground mx-0.5">|</span>
+            <span className="font-semibold text-foreground">₹ {fmt(stats.openingInr)}</span>
           </div>
-          <div className="h-px bg-border mx-4" />
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Opening INR</span>
-            </div>
-            <span className="text-sm font-semibold text-foreground">₹ {fmt(stats.openingInr)}</span>
-          </div>
-          <div className="h-px bg-border mx-4" />
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total Customers</span>
-            </div>
-            <span className="text-sm font-semibold text-foreground">{stats.totalCustomers}</span>
+          <div className="flex items-center gap-1">
+            <Users className="h-3 w-3 text-muted-foreground" />
+            <span className="font-semibold text-foreground">{stats.totalCustomers}</span>
           </div>
         </div>
 
-        {/* Quick Actions - Apple-style icon grid */}
+        {/* Quick Actions - Tighter grid */}
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">Quick Actions</p>
-          <div className="grid grid-cols-3 gap-3">
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">Quick Actions</p>
+          <div className="grid grid-cols-3 gap-2">
             {filteredMain.map((action) => (
               <button
                 key={action.url}
                 onClick={() => handleNav(action.url)}
-                className="flex flex-col items-center gap-2 py-4 bg-background rounded-2xl shadow-sm active:scale-95 transition-all duration-150"
+                className="flex flex-col items-center gap-1.5 py-3 bg-background rounded-xl shadow-sm active:scale-95 transition-all duration-150"
               >
-                <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center", action.color)}>
-                  <action.icon className="h-5 w-5 text-white" />
+                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", action.color)}>
+                  <action.icon className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-[11px] font-medium text-foreground">{action.title}</span>
+                <span className="text-[10px] font-medium text-foreground">{action.title}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Expense Tracker */}
-        <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-background rounded-xl shadow-sm overflow-hidden">
           <ExpenseTracker compact />
         </div>
 
-        {/* More - Apple Settings list style */}
+        {/* More - Compact list */}
         {filteredMore.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">More</p>
-            <div className="bg-background rounded-2xl shadow-sm overflow-hidden">
+            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">More</p>
+            <div className="bg-background rounded-xl shadow-sm overflow-hidden">
               {filteredMore.map((action, i) => (
                 <div key={action.url}>
-                  {i > 0 && <div className="h-px bg-border ml-14" />}
+                  {i > 0 && <div className="h-px bg-border ml-11" />}
                   <button
                     onClick={() => handleNav(action.url)}
-                    className="w-full flex items-center gap-3 px-4 py-3 active:bg-secondary/50 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 active:bg-secondary/50 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                      <action.icon className="h-4 w-4 text-muted-foreground" />
+                    <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center">
+                      <action.icon className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
-                    <span className="flex-1 text-sm font-medium text-foreground text-left">{action.title}</span>
-                    <ChevronRightIcon className="h-4 w-4 text-muted-foreground/50" />
+                    <span className="flex-1 text-xs font-medium text-foreground text-left">{action.title}</span>
+                    <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground/50" />
                   </button>
                 </div>
               ))}
