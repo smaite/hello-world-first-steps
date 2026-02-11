@@ -330,10 +330,10 @@ const BankAccounts = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Bank Accounts</h1>
-          <p className="text-muted-foreground">Manage your bank accounts for online transactions</p>
+      <div className="flex justify-between items-center gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold">Bank Accounts</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">Manage your bank accounts</p>
         </div>
         {canManage && (
           <Dialog open={dialogOpen} onOpenChange={(open) => {

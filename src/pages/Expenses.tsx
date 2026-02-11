@@ -425,10 +425,10 @@ const Expenses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Expenses</h1>
-          <p className="text-muted-foreground">Track and manage business expenses</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold">Expenses</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Track business expenses</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportToCSV}>

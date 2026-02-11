@@ -103,11 +103,11 @@
    return (
      <div className="space-y-6">
        <div>
-         <h1 className="text-3xl font-bold flex items-center gap-2">
-           <SettingsIcon className="h-8 w-8" />
-           System Settings
-         </h1>
-         <p className="text-muted-foreground">Configure system-wide preferences</p>
+          <h1 className="text-lg sm:text-3xl font-bold flex items-center gap-2">
+            <SettingsIcon className="h-5 w-5 sm:h-8 sm:w-8" />
+            Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Configure preferences</p>
        </div>
  
        <Card>

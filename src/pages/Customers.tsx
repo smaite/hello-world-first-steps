@@ -292,10 +292,10 @@ const Customers = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer directory</p>
+      <div className="flex justify-between items-center gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold">Customers</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage your customers</p>
         </div>
         {canCreate && (
           <Dialog open={dialogOpen} onOpenChange={(open) => {

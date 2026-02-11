@@ -287,10 +287,10 @@ const Exchange = () => {
   const toCurrency = fromCurrency === 'NPR' ? 'INR' : 'NPR';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Currency Exchange</h1>
-        <p className="text-muted-foreground">Exchange NPR and INR currencies</p>
+        <h1 className="text-lg sm:text-3xl font-bold">Currency Exchange</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Exchange NPR and INR</p>
       </div>
 
       {/* Exchange Rate Display */}
