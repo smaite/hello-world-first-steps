@@ -14,27 +14,27 @@ const MobileHeader = () => {
 
   return (
     <header 
-      className="sticky top-0 z-50 bg-primary text-primary-foreground px-4 py-3" 
-      style={{ paddingTop: `max(0.75rem, env(safe-area-inset-top, 0.75rem))` }}
+      className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2.5" 
+      style={{ paddingTop: `max(0.625rem, env(safe-area-inset-top, 0.625rem))` }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary-foreground/10 backdrop-blur-sm">
-            <ArrowLeftRight className="h-5 w-5" />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <ArrowLeftRight className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="font-semibold text-base">Madani Exchange</h1>
-            <p className="text-xs opacity-80">NPR ⇄ INR</p>
+            <h1 className="font-semibold text-sm text-foreground">Madani Exchange</h1>
+            <p className="text-[10px] text-muted-foreground">NPR ⇄ INR</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {(isOwner() || isManager()) && (
-            <div className="text-primary-foreground">
+            <div className="text-foreground">
               <NotificationBell />
             </div>
           )}
           <div className="text-right">
-            <p className="text-sm font-medium">{profile?.full_name}</p>
+            <p className="text-xs font-medium text-foreground">{profile?.full_name}</p>
           </div>
         </div>
       </div>
