@@ -38,31 +38,27 @@ export function EditOpeningBalanceDialog({
   const [openingInrDenoms, setOpeningInrDenoms] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState(currentNotes || '');
 
-  const calculateDenomsFromTotal = (total: number, currency: 'NPR' | 'INR'): Record<string, number> => {
-    const denomValues = currency === 'NPR'
-      ? [1000, 500, 100, 50, 20, 10, 5]
-      : [500, 200, 100, 50, 20, 10];
-    let remaining = total;
-    const result: Record<string, number> = {};
-    for (const denom of denomValues) {
-      const count = Math.floor(remaining / denom);
-      if (count > 0) {
-        result[denom.toString()] = count;
-        remaining -= count * denom;
-      }
-    }
-    if (currency === 'INR' && remaining > 0) {
-      result['coins'] = remaining;
-    }
-    return result;
-  };
-
-  const handleOpen = (isOpen: boolean) => {
+  const handleOpen = async (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
       setNotes(currentNotes || '');
-      setOpeningNprDenoms(calculateDenomsFromTotal(currentOpeningNpr, 'NPR'));
-      setOpeningInrDenoms(calculateDenomsFromTotal(currentOpeningInr, 'INR'));
+      // Fetch actual saved denominations from the database
+      const { data } = await supabase
+        .from('staff_cash_tracker')
+        .select('opening_npr_denoms, opening_inr_denoms')
+        .eq('id', recordId)
+        .maybeSingle();
+
+      if (data?.opening_npr_denoms && typeof data.opening_npr_denoms === 'object') {
+        setOpeningNprDenoms(data.opening_npr_denoms as Record<string, number>);
+      } else {
+        setOpeningNprDenoms({});
+      }
+      if (data?.opening_inr_denoms && typeof data.opening_inr_denoms === 'object') {
+        setOpeningInrDenoms(data.opening_inr_denoms as Record<string, number>);
+      } else {
+        setOpeningInrDenoms({});
+      }
     }
   };
 
@@ -87,6 +83,8 @@ export function EditOpeningBalanceDialog({
         .update({
           opening_npr: npr,
           opening_inr: inr,
+          opening_npr_denoms: openingNprDenoms,
+          opening_inr_denoms: openingInrDenoms,
           notes: notes || null,
         })
         .eq('id', recordId);

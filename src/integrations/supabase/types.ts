@@ -498,7 +498,9 @@ export type Database = {
           is_closed: boolean
           notes: string | null
           opening_inr: number
+          opening_inr_denoms: Json | null
           opening_npr: number
+          opening_npr_denoms: Json | null
           staff_id: string
           total_inr_in: number
           total_inr_out: number
@@ -515,7 +517,9 @@ export type Database = {
           is_closed?: boolean
           notes?: string | null
           opening_inr?: number
+          opening_inr_denoms?: Json | null
           opening_npr?: number
+          opening_npr_denoms?: Json | null
           staff_id: string
           total_inr_in?: number
           total_inr_out?: number
@@ -532,7 +536,9 @@ export type Database = {
           is_closed?: boolean
           notes?: string | null
           opening_inr?: number
+          opening_inr_denoms?: Json | null
           opening_npr?: number
+          opening_npr_denoms?: Json | null
           staff_id?: string
           total_inr_in?: number
           total_inr_out?: number
