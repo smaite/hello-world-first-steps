@@ -421,18 +421,17 @@ const CashTracker = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">Cash Tracker</h1>
-          <p className="text-muted-foreground">
-            {format(new Date(), 'MMMM d, yyyy')} • {profile?.full_name}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold leading-tight">Cash Tracker</h1>
+          <p className="text-xs text-muted-foreground truncate">
+            {format(new Date(), 'MMM d, yyyy')} • {profile?.full_name}
           </p>
         </div>
         {todayRecord && ledgerData && (
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleRefreshLedger} disabled={ledgerLoading}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${ledgerLoading ? 'animate-spin' : ''}`} />
-              Refresh
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefreshLedger} disabled={ledgerLoading} title="Refresh">
+              <RefreshCw className={`h-4 w-4 ${ledgerLoading ? 'animate-spin' : ''}`} />
             </Button>
             {!todayRecord?.is_closed && todayRecord && (
               <>
@@ -443,19 +442,16 @@ const CashTracker = () => {
                   currentNotes={todayRecord.notes}
                   onUpdate={fetchTodayRecord}
                 />
-                <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(true)} className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete Day
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteDialogOpen(true)} title="Delete Day">
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </>
             )}
-            <Button variant="outline" size="sm" onClick={handlePrintDenomination}>
-              <FileText className="h-4 w-4 mr-1" />
-              Denomination
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrintDenomination} title="Denomination">
+              <FileText className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-1" />
-              Ledger
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrint} title="Ledger">
+              <Printer className="h-4 w-4" />
             </Button>
           </div>
         )}
