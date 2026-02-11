@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Settings as SettingsIcon, ArrowLeftRight, Save } from 'lucide-react';
+import { FormSkeleton } from '@/components/ui/page-skeleton';
 
 const Settings = () => {
   const { isOwner } = useAuth();
@@ -90,11 +91,7 @@ const Settings = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

@@ -27,6 +27,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, Download } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/page-skeleton';
 
 interface Customer {
   id: string;
@@ -442,11 +443,7 @@ const Customers = () => {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
+                <TableSkeleton rows={5} cols={7} />
               ) : filteredCustomers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">

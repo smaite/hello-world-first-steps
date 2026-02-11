@@ -16,6 +16,7 @@ import { DailyLedgerReport } from '@/components/transactions/DailyLedgerReport';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { exportTransactionsToCSV, printTransactionsSheet } from '@/utils/exportUtils';
+import { CardListSkeleton, StatCardsSkeleton } from '@/components/ui/page-skeleton';
 
 interface Transaction {
   id: string;
@@ -324,11 +325,7 @@ const Transactions = () => {
       {/* Transaction List */}
       <div className="space-y-6">
         {loading ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Loading transactions...</p>
-            </CardContent>
-          </Card>
+          <CardListSkeleton count={5} />
         ) : filtered.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">

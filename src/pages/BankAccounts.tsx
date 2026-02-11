@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Building2, Edit, Trash2, QrCode, Upload, Download } from 'lucide-react';
+import { GridCardSkeleton } from '@/components/ui/page-skeleton';
 
 interface BankAccount {
   id: string;
@@ -497,9 +498,7 @@ const BankAccounts = () => {
       {/* Accounts Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
-          <div className="col-span-full flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+          <GridCardSkeleton count={3} />
         ) : accounts.length === 0 ? (
           <div className="col-span-full text-center py-12 text-muted-foreground">
             No bank accounts found
