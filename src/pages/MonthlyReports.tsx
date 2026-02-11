@@ -3,10 +3,11 @@
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-  import { Calendar, TrendingUp, TrendingDown, DollarSign, ArrowDownLeft, ArrowUpRight, Printer } from 'lucide-react';
+  import { Calendar, TrendingUp, TrendingDown, DollarSign, ArrowDownLeft, ArrowUpRight, Printer, Wallet, CheckCircle, AlertTriangle } from 'lucide-react';
   import { StatCardsSkeleton } from '@/components/ui/page-skeleton';
  import { format, startOfMonth, endOfMonth } from 'date-fns';
- import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
  
  interface MonthlyData {
    totalTransactions: number;
@@ -16,25 +17,22 @@
    inrGiven: number;
    totalExpensesNpr: number;
    totalExpensesInr: number;
-   creditGiven: number;
-   creditReceived: number;
- }
+  creditGiven: number;
+  creditReceived: number;
+  receivedNpr: number;
+  receivedInr: number;
+}
  
  const MonthlyReports = () => {
    const { toast } = useToast();
    const [loading, setLoading] = useState(true);
    const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
-   const [data, setData] = useState<MonthlyData>({
-     totalTransactions: 0,
-     nprReceived: 0,
-     nprGiven: 0,
-     inrReceived: 0,
-     inrGiven: 0,
-     totalExpensesNpr: 0,
-     totalExpensesInr: 0,
-     creditGiven: 0,
-     creditReceived: 0,
-   });
+  const [data, setData] = useState<MonthlyData>({
+    totalTransactions: 0, nprReceived: 0, nprGiven: 0,
+    inrReceived: 0, inrGiven: 0, totalExpensesNpr: 0,
+    totalExpensesInr: 0, creditGiven: 0, creditReceived: 0,
+    receivedNpr: 0, receivedInr: 0,
+  });
  
    useEffect(() => {
      fetchMonthlyData();
@@ -90,22 +88,29 @@
          .select('*')
          .gte('created_at', monthStart)
          .lte('created_at', monthEnd);
- 
+
        if (creditError) throw creditError;
- 
+
+       // Fetch receivings
+       const { data: receivingsData, error: recError } = await supabase
+         .from('money_receivings')
+         .select('*')
+         .gte('created_at', monthStart)
+         .lte('created_at', monthEnd);
+
+       if (recError) throw recError;
+
        const creditGiven = creditTrans?.filter(t => t.transaction_type === 'credit_given').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
        const creditReceived = creditTrans?.filter(t => t.transaction_type === 'credit_received').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
- 
+
+       const receivedNpr = receivingsData?.filter((r: any) => r.currency === 'NPR').reduce((sum: number, r: any) => sum + Number(r.amount), 0) || 0;
+       const receivedInr = receivingsData?.filter((r: any) => r.currency === 'INR').reduce((sum: number, r: any) => sum + Number(r.amount), 0) || 0;
+
        setData({
          totalTransactions: transactions?.length || 0,
-         nprReceived,
-         nprGiven,
-         inrReceived,
-         inrGiven,
-         totalExpensesNpr: expensesNpr,
-         totalExpensesInr: expensesInr,
-         creditGiven,
-         creditReceived,
+         nprReceived, nprGiven, inrReceived, inrGiven,
+         totalExpensesNpr: expensesNpr, totalExpensesInr: expensesInr,
+         creditGiven, creditReceived, receivedNpr, receivedInr,
        });
      } catch (error: any) {
        toast({
@@ -351,7 +356,42 @@
              </Card>
            </div>
  
-           {/* Net Performance */}
+            {/* Expenses vs Received */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Expenses vs Received</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-lg bg-muted text-center">
+                    <Wallet className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Total Expenses</p>
+                    <p className="text-lg font-bold">रू {data.totalExpensesNpr.toLocaleString()}</p>
+                    {data.totalExpensesInr > 0 && <p className="text-sm font-semibold">₹ {data.totalExpensesInr.toLocaleString()}</p>}
+                  </div>
+                  <div className="p-3 rounded-lg bg-primary/10 text-center">
+                    <CheckCircle className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <p className="text-xs text-muted-foreground">Received</p>
+                    <p className="text-lg font-bold text-primary">रू {data.receivedNpr.toLocaleString()}</p>
+                    {data.receivedInr > 0 && <p className="text-sm font-semibold text-primary">₹ {data.receivedInr.toLocaleString()}</p>}
+                  </div>
+                  <div className={cn("p-3 rounded-lg text-center", (data.totalExpensesNpr - data.receivedNpr) > 0 ? "bg-destructive/10" : "bg-primary/10")}>
+                    <AlertTriangle className={cn("h-4 w-4 mx-auto mb-1", (data.totalExpensesNpr - data.receivedNpr) > 0 ? "text-destructive" : "text-primary")} />
+                    <p className="text-xs text-muted-foreground">Remaining</p>
+                    <p className={cn("text-lg font-bold", (data.totalExpensesNpr - data.receivedNpr) > 0 ? "text-destructive" : "text-primary")}>
+                      रू {Math.abs(data.totalExpensesNpr - data.receivedNpr).toLocaleString()}
+                    </p>
+                    {(data.totalExpensesInr > 0 || data.receivedInr > 0) && (
+                      <p className={cn("text-sm font-semibold", (data.totalExpensesInr - data.receivedInr) > 0 ? "text-destructive" : "text-primary")}>
+                        ₹ {Math.abs(data.totalExpensesInr - data.receivedInr).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Net Performance */}
            <Card>
              <CardHeader>
                <CardTitle>Net Performance</CardTitle>
