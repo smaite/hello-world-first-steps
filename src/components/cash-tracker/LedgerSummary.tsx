@@ -137,11 +137,11 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
           <table className="w-full text-sm">
             <tbody>
               <LedgerRow value={data.openingNpr} label="Opening Balance" />
-              <LedgerRow value={data.ncToIc} label="NPR Received" subLabel="NC→IC" />
-              <LedgerRow value={data.takeNpr} label="Cash In" subLabel="Take" />
+              <LedgerRow value={data.ncToIc} label="NPR Received" subLabel="Sell" />
+              <LedgerRow value={data.takeNpr} label="Cash In" />
               <LedgerRow value={data.esewaInNpr} label="Online In" subLabel="eSewa" />
-              <LedgerRow value={data.nastaKharcha} label="Expenses" subLabel="Nasta" />
-              <LedgerRow value={data.icToNc} label="NPR Paid Out" subLabel="IC→NC" />
+              <LedgerRow value={data.nastaKharcha} label="Expenses" />
+              <LedgerRow value={data.icToNc} label="NPR Paid Out" subLabel="Buy" />
               <LedgerRow value={data.hunuParneNpr} label="Expected Balance" isTotal isHighlight />
               {showActual && <LedgerRow value={data.chaNpr} label="Actual Balance" isTotal />}
               {showActual && (
@@ -165,10 +165,10 @@ export const LedgerSummary = ({ data, showActual = false, onSettlementComplete }
           <table className="w-full text-sm">
             <tbody>
               <LedgerRow value={data.openingInr} label="Opening Balance" />
-              <LedgerRow value={data.icToNc_inr} label="INR Received" subLabel="IC→NC" />
-              <LedgerRow value={data.takeInr} label="Cash In" subLabel="Take" />
+              <LedgerRow value={data.icToNc_inr} label="INR Received" subLabel="Buy" />
+              <LedgerRow value={data.takeInr} label="Cash In" />
               <LedgerRow value={data.esewaInInr} label="Online In" subLabel="eSewa" />
-              <LedgerRow value={data.nastaKharchaInr} label="Expenses" subLabel="Nasta" />
+              <LedgerRow value={data.nastaKharchaInr} label="Expenses" />
               <LedgerRow value={data.ncToIc_inr} label="INR Paid Out" subLabel="Sell" />
               <LedgerRow value={data.hunuParneInr} label="Expected Balance" isTotal isHighlight />
               {showActual && <LedgerRow value={data.chaInr} label="Actual Balance" isTotal />}

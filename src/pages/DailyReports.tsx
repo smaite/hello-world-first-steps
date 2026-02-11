@@ -243,16 +243,16 @@ const DailyReports = () => {
               <tr><th colspan="2">Balance (NC) - NPR</th></tr>
             </thead>
             <tbody>
-              <tr><td class="amount">${formatNum(ledgerData.openingNpr)}</td><td class="label">OPENING</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.ncToIc)}</td><td class="label">NC TO IC</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.takeNpr)}</td><td class="label">TAKE</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.esewaInNpr)}</td><td class="label">E-SEWA</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.nastaKharcha)}</td><td class="label">NASTA</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.icToNc)}</td><td class="label">IC TO NC</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.hunuParneNpr)}</td><td class="label">HUNU PARNE</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.chaNpr)}</td><td class="label">CHA</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.openingNpr)}</td><td class="label">Opening Balance</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.ncToIc)}</td><td class="label">NPR Received</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.takeNpr)}</td><td class="label">Cash In</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.esewaInNpr)}</td><td class="label">Online (eSewa)</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.nastaKharcha)}</td><td class="label">Expenses</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.icToNc)}</td><td class="label">NPR Paid Out</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.hunuParneNpr)}</td><td class="label">Expected Balance</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.chaNpr)}</td><td class="label">Actual Balance</td></tr>
               <tr class="total-row"><td class="amount">${formatNum(ledgerData.totalNpr)}</td><td class="label">Total</td></tr>
-              <tr class="farak-row"><td class="amount">${formatNum(ledgerData.farakNpr)}</td><td class="label">Farak</td></tr>
+              <tr class="farak-row"><td class="amount">${formatNum(ledgerData.farakNpr)}</td><td class="label">Difference</td></tr>
             </tbody>
           </table>
 
@@ -261,16 +261,16 @@ const DailyReports = () => {
               <tr><th colspan="2">Balance (IC) - INR</th></tr>
             </thead>
             <tbody>
-              <tr><td class="amount">${formatNum(ledgerData.openingInr)}</td><td class="label">OPENING</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.icToNc_inr)}</td><td class="label">IC TO NC</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.takeInr)}</td><td class="label">TAKE</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.esewaInInr)}</td><td class="label">E-SEWA</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.nastaKharchaInr)}</td><td class="label">NASTA</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.ncToIc_inr)}</td><td class="label">NC TO IC</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.hunuParneInr)}</td><td class="label">HUNU PARNE</td></tr>
-              <tr><td class="amount">${formatNum(ledgerData.chaInr)}</td><td class="label">CHA</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.openingInr)}</td><td class="label">Opening Balance</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.icToNc_inr)}</td><td class="label">INR Received</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.takeInr)}</td><td class="label">Cash In</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.esewaInInr)}</td><td class="label">Online (eSewa)</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.nastaKharchaInr)}</td><td class="label">Expenses</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.ncToIc_inr)}</td><td class="label">INR Paid Out</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.hunuParneInr)}</td><td class="label">Expected Balance</td></tr>
+              <tr><td class="amount">${formatNum(ledgerData.chaInr)}</td><td class="label">Actual Balance</td></tr>
               <tr class="total-row"><td class="amount">${formatNum(ledgerData.totalInr)}</td><td class="label">Total</td></tr>
-              <tr class="farak-row"><td class="amount">${formatNum(ledgerData.farakInr)}</td><td class="label">Farak</td></tr>
+              <tr class="farak-row"><td class="amount">${formatNum(ledgerData.farakInr)}</td><td class="label">Difference</td></tr>
             </tbody>
           </table>
         </div>
@@ -417,16 +417,16 @@ const DailyReports = () => {
                   <table className="w-full text-sm">
                     <tbody>
                       {[
-                        { amount: ledgerData.openingNpr, label: 'OPENING', highlight: false },
-                        { amount: ledgerData.ncToIc, label: 'NC TO IC', highlight: false },
-                        { amount: ledgerData.takeNpr, label: 'TAKE', highlight: false },
-                        { amount: ledgerData.esewaInNpr, label: 'E-SEWA', highlight: false },
-                        { amount: ledgerData.nastaKharcha, label: 'NASTA', highlight: false },
-                        { amount: ledgerData.icToNc, label: 'IC TO NC', highlight: false },
-                        { amount: ledgerData.hunuParneNpr, label: 'HUNU PARNE', highlight: false },
-                        { amount: ledgerData.chaNpr, label: 'CHA', highlight: false },
+                        { amount: ledgerData.openingNpr, label: 'Opening Balance', highlight: false },
+                        { amount: ledgerData.ncToIc, label: 'NPR Received', highlight: false },
+                        { amount: ledgerData.takeNpr, label: 'Cash In', highlight: false },
+                        { amount: ledgerData.esewaInNpr, label: 'Online (eSewa)', highlight: false },
+                        { amount: ledgerData.nastaKharcha, label: 'Expenses', highlight: false },
+                        { amount: ledgerData.icToNc, label: 'NPR Paid Out', highlight: false },
+                        { amount: ledgerData.hunuParneNpr, label: 'Expected Balance', highlight: false },
+                        { amount: ledgerData.chaNpr, label: 'Actual Balance', highlight: false },
                         { amount: ledgerData.totalNpr, label: 'Total', highlight: true },
-                        { amount: ledgerData.farakNpr, label: 'Farak', highlight: true, primary: true },
+                        { amount: ledgerData.farakNpr, label: 'Difference', highlight: true, primary: true },
                       ].map((row, i) => (
                         <tr key={i} className={cn("border-b", row.highlight && "bg-muted font-bold")}>
                           <td className={cn("p-3 text-right font-mono", row.primary && "text-primary")}>{formatNum(row.amount)}</td>
@@ -449,16 +449,16 @@ const DailyReports = () => {
                   <table className="w-full text-sm">
                     <tbody>
                       {[
-                        { amount: ledgerData.openingInr, label: 'OPENING', highlight: false },
-                        { amount: ledgerData.icToNc_inr, label: 'IC TO NC', highlight: false },
-                        { amount: ledgerData.takeInr, label: 'TAKE', highlight: false },
-                        { amount: ledgerData.esewaInInr, label: 'E-SEWA', highlight: false },
-                        { amount: ledgerData.nastaKharchaInr, label: 'NASTA', highlight: false },
-                        { amount: ledgerData.ncToIc_inr, label: 'NC TO IC', highlight: false },
-                        { amount: ledgerData.hunuParneInr, label: 'HUNU PARNE', highlight: false },
-                        { amount: ledgerData.chaInr, label: 'CHA', highlight: false },
+                        { amount: ledgerData.openingInr, label: 'Opening Balance', highlight: false },
+                        { amount: ledgerData.icToNc_inr, label: 'INR Received', highlight: false },
+                        { amount: ledgerData.takeInr, label: 'Cash In', highlight: false },
+                        { amount: ledgerData.esewaInInr, label: 'Online (eSewa)', highlight: false },
+                        { amount: ledgerData.nastaKharchaInr, label: 'Expenses', highlight: false },
+                        { amount: ledgerData.ncToIc_inr, label: 'INR Paid Out', highlight: false },
+                        { amount: ledgerData.hunuParneInr, label: 'Expected Balance', highlight: false },
+                        { amount: ledgerData.chaInr, label: 'Actual Balance', highlight: false },
                         { amount: ledgerData.totalInr, label: 'Total', highlight: true },
-                        { amount: ledgerData.farakInr, label: 'Farak', highlight: true, primary: true },
+                        { amount: ledgerData.farakInr, label: 'Difference', highlight: true, primary: true },
                       ].map((row, i) => (
                         <tr key={i} className={cn("border-b", row.highlight && "bg-muted font-bold")}>
                           <td className={cn("p-3 text-right font-mono", row.primary && "text-primary")}>{formatNum(row.amount)}</td>
