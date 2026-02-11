@@ -38,25 +38,6 @@ export function EditOpeningBalanceDialog({
   const [openingInrDenoms, setOpeningInrDenoms] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState(currentNotes || '');
 
-  const calculateDenomsFromTotal = (total: number, currency: 'NPR' | 'INR'): Record<string, number> => {
-    const denomValues = currency === 'NPR'
-      ? [1000, 500, 100, 50, 20, 10, 5]
-      : [500, 200, 100, 50, 20, 10];
-    let remaining = total;
-    const result: Record<string, number> = {};
-    for (const denom of denomValues) {
-      const count = Math.floor(remaining / denom);
-      if (count > 0) {
-        result[denom.toString()] = count;
-        remaining -= count * denom;
-      }
-    }
-    if (currency === 'INR' && remaining > 0) {
-      result['coins'] = remaining;
-    }
-    return result;
-  };
-
   const handleOpen = async (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
@@ -68,15 +49,15 @@ export function EditOpeningBalanceDialog({
         .eq('id', recordId)
         .maybeSingle();
 
-      const hasNprDenoms = data?.opening_npr_denoms && typeof data.opening_npr_denoms === 'object' && Object.keys(data.opening_npr_denoms as object).length > 0;
-      const hasInrDenoms = data?.opening_inr_denoms && typeof data.opening_inr_denoms === 'object' && Object.keys(data.opening_inr_denoms as object).length > 0;
-
-      setOpeningNprDenoms(hasNprDenoms
+      const nprDenoms = data?.opening_npr_denoms && typeof data.opening_npr_denoms === 'object' && Object.keys(data.opening_npr_denoms as object).length > 0
         ? (data.opening_npr_denoms as Record<string, number>)
-        : calculateDenomsFromTotal(currentOpeningNpr, 'NPR'));
-      setOpeningInrDenoms(hasInrDenoms
+        : {};
+      const inrDenoms = data?.opening_inr_denoms && typeof data.opening_inr_denoms === 'object' && Object.keys(data.opening_inr_denoms as object).length > 0
         ? (data.opening_inr_denoms as Record<string, number>)
-        : calculateDenomsFromTotal(currentOpeningInr, 'INR'));
+        : {};
+
+      setOpeningNprDenoms(nprDenoms);
+      setOpeningInrDenoms(inrDenoms);
     }
   };
 
