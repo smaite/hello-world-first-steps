@@ -361,6 +361,45 @@ export type Database = {
         }
         Relationships: []
       }
+      money_receivings: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          currency: string
+          id: string
+          is_confirmed: boolean
+          method: string
+          notes: string | null
+          staff_id: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_confirmed?: boolean
+          method?: string
+          notes?: string | null
+          staff_id: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_confirmed?: boolean
+          method?: string
+          notes?: string | null
+          staff_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

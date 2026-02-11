@@ -86,6 +86,11 @@ const AppSidebar = () => {
       icon: Receipt,
       permission: "view_expenses",
     },
+    {
+      title: "Receivings",
+      url: "/reports/receivings",
+      icon: Banknote,
+    },
   ];
 
   const adminItems = [
