@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format, addDays, subDays } from 'date-fns';
 import { ExpenseTracker } from '@/components/dashboard/ExpenseTracker';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MobileDashboardProps {
   stats: {
@@ -115,131 +116,181 @@ const MobileDashboard = ({ stats, exchangeRate, loading, selectedDate, onDateCha
       </div>
 
       <div className="px-3 space-y-2.5 mt-2">
-        {/* Exchange Rate + Transactions - Inline row */}
-        <div className="flex gap-2">
-          <div className="flex-1 bg-background rounded-xl p-2.5 shadow-sm">
-            <div className="flex items-center gap-1 mb-1">
-              <TrendingUp className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Rates</span>
-            </div>
-            <div className="flex gap-3">
-              <div>
-                <p className="text-[9px] text-muted-foreground">NPR→INR</p>
-                <p className="text-sm font-bold text-foreground">1:{exchangeRate.nprToInr}</p>
-              </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground">INR→NPR</p>
-                <p className="text-sm font-bold text-foreground">1:{exchangeRate.inrToNpr}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-background rounded-xl p-2.5 shadow-sm flex flex-col items-center justify-center min-w-[72px]">
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider">Txns</span>
-            <span className="text-2xl font-bold text-foreground leading-tight">{stats.todayTransactions}</span>
-          </div>
-        </div>
-
-        {/* NPR + INR Stats - Compact 2-row grid */}
-        <div className="bg-background rounded-xl shadow-sm p-2.5">
-          {/* NPR row */}
-          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">NPR</p>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
-              <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
-              <div>
-                <p className="text-[9px] text-muted-foreground leading-none">In</p>
-                <p className="text-xs font-bold text-green-600">रू {fmt(stats.nprIn)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
-              <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
-              <div>
-                <p className="text-[9px] text-muted-foreground leading-none">Out</p>
-                <p className="text-xs font-bold text-destructive">रू {fmt(stats.nprOut)}</p>
-              </div>
-            </div>
-          </div>
-          {/* INR row */}
-          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">INR</p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
-              <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
-              <div>
-                <p className="text-[9px] text-muted-foreground leading-none">In</p>
-                <p className="text-xs font-bold text-green-600">₹ {fmt(stats.inrIn)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
-              <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
-              <div>
-                <p className="text-[9px] text-muted-foreground leading-none">Out</p>
-                <p className="text-xs font-bold text-destructive">₹ {fmt(stats.inrOut)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Opening Balance - Compact inline row */}
-        <div className="bg-background rounded-xl shadow-sm p-2.5 flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-1.5">
-            <Wallet className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">Open:</span>
-            <span className="font-semibold text-foreground">रू {fmt(stats.openingNpr)}</span>
-            <span className="text-muted-foreground mx-0.5">|</span>
-            <span className="font-semibold text-foreground">₹ {fmt(stats.openingInr)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-3 w-3 text-muted-foreground" />
-            <span className="font-semibold text-foreground">{stats.totalCustomers}</span>
-          </div>
-        </div>
-
-        {/* Quick Actions - Tighter grid */}
-        <div>
-          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">Quick Actions</p>
-          <div className="grid grid-cols-3 gap-2">
-            {filteredMain.map((action) => (
-              <button
-                key={action.url}
-                onClick={() => handleNav(action.url)}
-                className="flex flex-col items-center gap-1.5 py-3 bg-background rounded-xl shadow-sm active:scale-95 transition-all duration-150"
-              >
-                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", action.color)}>
-                  <action.icon className="h-4 w-4 text-white" />
+        {loading ? (
+          <>
+            {/* Skeleton: Rates + Txns */}
+            <div className="flex gap-2">
+              <div className="flex-1 bg-background rounded-xl p-2.5 shadow-sm space-y-2">
+                <Skeleton className="h-3 w-12" />
+                <div className="flex gap-3">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-16" />
                 </div>
-                <span className="text-[10px] font-medium text-foreground">{action.title}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+              </div>
+              <div className="bg-background rounded-xl p-2.5 shadow-sm flex flex-col items-center justify-center min-w-[72px] gap-1">
+                <Skeleton className="h-3 w-8" />
+                <Skeleton className="h-7 w-10" />
+              </div>
+            </div>
+            {/* Skeleton: NPR/INR Stats */}
+            <div className="bg-background rounded-xl shadow-sm p-2.5 space-y-2">
+              <Skeleton className="h-3 w-8" />
+              <div className="grid grid-cols-2 gap-2">
+                <Skeleton className="h-10 rounded-lg" />
+                <Skeleton className="h-10 rounded-lg" />
+              </div>
+              <Skeleton className="h-3 w-8" />
+              <div className="grid grid-cols-2 gap-2">
+                <Skeleton className="h-10 rounded-lg" />
+                <Skeleton className="h-10 rounded-lg" />
+              </div>
+            </div>
+            {/* Skeleton: Opening Balance */}
+            <Skeleton className="h-10 rounded-xl" />
+            {/* Skeleton: Quick Actions */}
+            <div>
+              <Skeleton className="h-3 w-20 mb-1.5" />
+              <div className="grid grid-cols-3 gap-2">
+                {[1,2,3,4,5,6].map(i => (
+                  <Skeleton key={i} className="h-[72px] rounded-xl" />
+                ))}
+              </div>
+            </div>
+            {/* Skeleton: Expense Tracker */}
+            <Skeleton className="h-24 rounded-xl" />
+            {/* Skeleton: More */}
+            <div>
+              <Skeleton className="h-3 w-12 mb-1.5" />
+              <Skeleton className="h-32 rounded-xl" />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Exchange Rate + Transactions - Inline row */}
+            <div className="flex gap-2">
+              <div className="flex-1 bg-background rounded-xl p-2.5 shadow-sm">
+                <div className="flex items-center gap-1 mb-1">
+                  <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Rates</span>
+                </div>
+                <div className="flex gap-3">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground">NPR→INR</p>
+                    <p className="text-sm font-bold text-foreground">1:{exchangeRate.nprToInr}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground">INR→NPR</p>
+                    <p className="text-sm font-bold text-foreground">1:{exchangeRate.inrToNpr}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-background rounded-xl p-2.5 shadow-sm flex flex-col items-center justify-center min-w-[72px]">
+                <span className="text-[9px] text-muted-foreground uppercase tracking-wider">Txns</span>
+                <span className="text-2xl font-bold text-foreground leading-tight">{stats.todayTransactions}</span>
+              </div>
+            </div>
 
-        {/* Expense Tracker */}
-        <div className="bg-background rounded-xl shadow-sm overflow-hidden">
-          <ExpenseTracker compact />
-        </div>
+            {/* NPR + INR Stats - Compact 2-row grid */}
+            <div className="bg-background rounded-xl shadow-sm p-2.5">
+              <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">NPR</p>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
+                  <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-muted-foreground leading-none">In</p>
+                    <p className="text-xs font-bold text-green-600">रू {fmt(stats.nprIn)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
+                  <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-muted-foreground leading-none">Out</p>
+                    <p className="text-xs font-bold text-destructive">रू {fmt(stats.nprOut)}</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">INR</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 bg-green-500/8 rounded-lg px-2.5 py-1.5">
+                  <ArrowDownLeft className="h-3 w-3 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-muted-foreground leading-none">In</p>
+                    <p className="text-xs font-bold text-green-600">₹ {fmt(stats.inrIn)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-destructive/8 rounded-lg px-2.5 py-1.5">
+                  <ArrowUpRight className="h-3 w-3 text-destructive shrink-0" />
+                  <div>
+                    <p className="text-[9px] text-muted-foreground leading-none">Out</p>
+                    <p className="text-xs font-bold text-destructive">₹ {fmt(stats.inrOut)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {/* More - Compact list */}
-        {filteredMore.length > 0 && (
-          <div>
-            <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">More</p>
-            <div className="bg-background rounded-xl shadow-sm overflow-hidden">
-              {filteredMore.map((action, i) => (
-                <div key={action.url}>
-                  {i > 0 && <div className="h-px bg-border ml-11" />}
+            {/* Opening Balance */}
+            <div className="bg-background rounded-xl shadow-sm p-2.5 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <Wallet className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground">Open:</span>
+                <span className="font-semibold text-foreground">रू {fmt(stats.openingNpr)}</span>
+                <span className="text-muted-foreground mx-0.5">|</span>
+                <span className="font-semibold text-foreground">₹ {fmt(stats.openingInr)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3 text-muted-foreground" />
+                <span className="font-semibold text-foreground">{stats.totalCustomers}</span>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+              <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">Quick Actions</p>
+              <div className="grid grid-cols-3 gap-2">
+                {filteredMain.map((action) => (
                   <button
+                    key={action.url}
                     onClick={() => handleNav(action.url)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 active:bg-secondary/50 transition-colors"
+                    className="flex flex-col items-center gap-1.5 py-3 bg-background rounded-xl shadow-sm active:scale-95 transition-all duration-150"
                   >
-                    <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center">
-                      <action.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", action.color)}>
+                      <action.icon className="h-4 w-4 text-white" />
                     </div>
-                    <span className="flex-1 text-xs font-medium text-foreground text-left">{action.title}</span>
-                    <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-[10px] font-medium text-foreground">{action.title}</span>
                   </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+
+            {/* Expense Tracker */}
+            <div className="bg-background rounded-xl shadow-sm overflow-hidden">
+              <ExpenseTracker compact />
+            </div>
+
+            {/* More */}
+            {filteredMore.length > 0 && (
+              <div>
+                <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 px-0.5">More</p>
+                <div className="bg-background rounded-xl shadow-sm overflow-hidden">
+                  {filteredMore.map((action, i) => (
+                    <div key={action.url}>
+                      {i > 0 && <div className="h-px bg-border ml-11" />}
+                      <button
+                        onClick={() => handleNav(action.url)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 active:bg-secondary/50 transition-colors"
+                      >
+                        <div className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center">
+                          <action.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="flex-1 text-xs font-medium text-foreground text-left">{action.title}</span>
+                        <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
