@@ -112,7 +112,7 @@ const MobileBottomNav = () => {
             <SheetHeader>
               <SheetTitle>More Options</SheetTitle>
             </SheetHeader>
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 overflow-y-auto max-h-[60vh]">
               {/* More Items */}
               {filteredMoreItems.length > 0 && (
                 <div className="space-y-1">
