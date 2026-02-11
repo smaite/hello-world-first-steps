@@ -15,7 +15,9 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   TrendingUp,
-  Wallet
+  Wallet,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, addDays, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -64,6 +66,8 @@ const DailyReports = () => {
   const [ledgerData, setLedgerData] = useState<LedgerData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionCount, setTransactionCount] = useState(0);
+  const [expensesTotal, setExpensesTotal] = useState({ npr: 0, inr: 0 });
+  const [receivedTotal, setReceivedTotal] = useState({ npr: 0, inr: 0 });
 
   useEffect(() => {
     fetchReportData();
@@ -77,17 +81,27 @@ const DailyReports = () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
       // Fetch all data in parallel
-      const [cashTrackerRes, transactionsRes, creditTxRes, expensesRes] = await Promise.all([
+      const [cashTrackerRes, transactionsRes, creditTxRes, expensesRes, receivingsRes] = await Promise.all([
         supabase.from('staff_cash_tracker').select('*').eq('date', dateStr).maybeSingle(),
         supabase.from('transactions').select('*, customers(name)').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }),
         supabase.from('credit_transactions').select('*').gte('created_at', dayStart).lte('created_at', dayEnd),
         supabase.from('expenses').select('*').eq('expense_date', dateStr),
+        supabase.from('money_receivings').select('*').gte('created_at', dayStart).lte('created_at', dayEnd),
       ]);
 
       const cashTracker = cashTrackerRes.data;
       const txList = transactionsRes.data || [];
       const creditTx = creditTxRes.data || [];
       const expenses = expensesRes.data || [];
+      const receivings = receivingsRes.data || [];
+
+      // Calculate expenses vs received totals
+      const expNpr = expenses.filter(e => e.currency === 'NPR').reduce((s, e) => s + Number(e.amount), 0);
+      const expInr = expenses.filter(e => e.currency === 'INR').reduce((s, e) => s + Number(e.amount), 0);
+      const recNpr = receivings.filter((r: any) => r.currency === 'NPR').reduce((s: number, r: any) => s + Number(r.amount), 0);
+      const recInr = receivings.filter((r: any) => r.currency === 'INR').reduce((s: number, r: any) => s + Number(r.amount), 0);
+      setExpensesTotal({ npr: expNpr, inr: expInr });
+      setReceivedTotal({ npr: recNpr, inr: recInr });
 
       setTransactions(txList);
       setTransactionCount(txList.length);
@@ -509,6 +523,41 @@ const DailyReports = () => {
                     <p className="text-sm text-muted-foreground">INR Given</p>
                     <p className="font-bold text-destructive">{ledgerData ? formatCurrency(ledgerData.ncToIc_inr, 'INR') : '-'}</p>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Expenses vs Received */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Expenses vs Received</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg bg-muted text-center">
+                  <Wallet className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Total Expenses</p>
+                  <p className="text-lg font-bold">रू {expensesTotal.npr.toLocaleString()}</p>
+                  {expensesTotal.inr > 0 && <p className="text-sm font-semibold">₹ {expensesTotal.inr.toLocaleString()}</p>}
+                </div>
+                <div className="p-3 rounded-lg bg-primary/10 text-center">
+                  <CheckCircle className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <p className="text-xs text-muted-foreground">Received</p>
+                  <p className="text-lg font-bold text-primary">रू {receivedTotal.npr.toLocaleString()}</p>
+                  {receivedTotal.inr > 0 && <p className="text-sm font-semibold text-primary">₹ {receivedTotal.inr.toLocaleString()}</p>}
+                </div>
+                <div className={cn("p-3 rounded-lg text-center", (expensesTotal.npr - receivedTotal.npr) > 0 ? "bg-destructive/10" : "bg-primary/10")}>
+                  <AlertTriangle className={cn("h-4 w-4 mx-auto mb-1", (expensesTotal.npr - receivedTotal.npr) > 0 ? "text-destructive" : "text-primary")} />
+                  <p className="text-xs text-muted-foreground">Remaining</p>
+                  <p className={cn("text-lg font-bold", (expensesTotal.npr - receivedTotal.npr) > 0 ? "text-destructive" : "text-primary")}>
+                    रू {Math.abs(expensesTotal.npr - receivedTotal.npr).toLocaleString()}
+                  </p>
+                  {(expensesTotal.inr > 0 || receivedTotal.inr > 0) && (
+                    <p className={cn("text-sm font-semibold", (expensesTotal.inr - receivedTotal.inr) > 0 ? "text-destructive" : "text-primary")}>
+                      ₹ {Math.abs(expensesTotal.inr - receivedTotal.inr).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
