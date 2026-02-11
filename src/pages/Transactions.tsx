@@ -173,11 +173,11 @@ const Transactions = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground">{getDateLabel()} • {filtered.length} transactions</p>
-        </div>
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+         <div className="min-w-0">
+           <h1 className="text-lg sm:text-3xl font-bold">Transactions</h1>
+           <p className="text-xs sm:text-sm text-muted-foreground">{getDateLabel()} • {filtered.length} transactions</p>
+         </div>
       </div>
 
       {/* Search Bar */}

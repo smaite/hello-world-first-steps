@@ -47,7 +47,7 @@ const AppLayout = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <MobileHeader />
-        <main className="flex-1 p-4 overflow-auto" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+        <main className="flex-1 px-3 py-3 overflow-auto" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
           <Outlet />
         </main>
         <MobileBottomNav />

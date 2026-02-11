@@ -293,11 +293,11 @@ const DailyReports = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            Daily Report
+       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+         <div>
+           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+             <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
+             Daily Report
           </h1>
           <p className="text-muted-foreground">
             {isToday ? "Today's" : format(selectedDate, 'dd MMM yyyy')} financial summary

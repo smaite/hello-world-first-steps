@@ -198,10 +198,10 @@ const StaffSalary = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Staff Salary</h1>
-          <p className="text-muted-foreground">Manage staff salaries and payments</p>
+      <div className="flex justify-between items-center gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold">Staff Salary</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage salaries and payments</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>

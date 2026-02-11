@@ -43,6 +43,7 @@ const MobileBottomNav = () => {
     { title: 'Credit Management', url: '/credits', icon: CreditCard, permission: 'view_customer_credit' },
     { title: 'Bank Accounts', url: '/bank-accounts', icon: Building2, permission: 'view_bank_accounts' },
     { title: 'Daily Reports', url: '/reports/daily', icon: FileText, permission: 'view_daily_reports' },
+    { title: 'Monthly Reports', url: '/reports/monthly', icon: FileText, permission: 'view_daily_reports' },
     { title: 'Transactions', url: '/reports/transactions', icon: Receipt, permission: 'view_transactions' },
     { title: 'Expenses', url: '/expenses', icon: Receipt, permission: 'view_expenses' },
   ];
@@ -50,6 +51,7 @@ const MobileBottomNav = () => {
   const adminItems = [
     { title: 'Staff Management', url: '/staff', icon: UserCog },
     { title: 'Staff Salary', url: '/staff/salary', icon: Wallet },
+    { title: 'User Activity', url: '/activity', icon: LayoutDashboard },
     { title: 'Settings', url: '/settings', icon: Settings },
   ];
 

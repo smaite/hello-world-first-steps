@@ -219,11 +219,11 @@
      <div className="space-y-6">
        <div className="flex items-center justify-between">
          <div>
-           <h1 className="text-3xl font-bold flex items-center gap-2">
-             <Calendar className="h-8 w-8" />
-             Monthly Reports
-           </h1>
-           <p className="text-muted-foreground">Comprehensive monthly business performance</p>
+            <h1 className="text-lg sm:text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-5 w-5 sm:h-8 sm:w-8" />
+              Monthly Reports
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Monthly business performance</p>
          </div>
          <div className="flex items-center gap-2">
            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
