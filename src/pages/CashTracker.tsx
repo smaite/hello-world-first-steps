@@ -56,6 +56,7 @@ const CashTracker = () => {
   const [startNextDayDialogOpen, setStartNextDayDialogOpen] = useState(false);
   const [nextDayDate, setNextDayDate] = useState('');
   const [startingNextDay, setStartingNextDay] = useState(false);
+  const [workingDate, setWorkingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
@@ -146,7 +147,7 @@ const CashTracker = () => {
         .from('staff_cash_tracker')
         .insert({
           staff_id: user.id,
-          date: today,
+          date: workingDate,
           opening_npr: npr,
           opening_inr: inr,
           opening_npr_denoms: openingNprDenoms,
@@ -159,7 +160,7 @@ const CashTracker = () => {
       if (error) throw error;
 
       setTodayRecord(data);
-      await fetchLedgerData(new Date(), npr, inr);
+      await fetchLedgerData(new Date(workingDate), npr, inr);
       
       toast({
         title: 'Opening Balance Set',
@@ -280,57 +281,33 @@ const CashTracker = () => {
         .maybeSingle();
 
       if (existing) {
-        // Record exists — just switch to it
-        setTodayRecord(existing);
-        setNotes(existing.notes || '');
-        setOpeningNprDenoms({});
-        setOpeningInrDenoms({});
-        setClosingNprDenoms({});
-        setClosingInrDenoms({});
-        await fetchLedgerData(
-          new Date(nextDayDate),
-          existing.opening_npr,
-          existing.opening_inr,
-          existing.closing_npr ?? undefined,
-          existing.closing_inr ?? undefined
-        );
-        setStartNextDayDialogOpen(false);
         toast({
-          title: 'Day Loaded',
-          description: `Switched to ${format(new Date(nextDayDate), 'dd MMM yyyy')}`,
+          title: 'Record Exists',
+          description: `A record already exists for ${format(new Date(nextDayDate), 'dd MMM yyyy')}. Delete it first to restart.`,
+          variant: 'destructive',
         });
         setStartingNextDay(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from('staff_cash_tracker')
-        .insert({
-          staff_id: user.id,
-          date: nextDayDate,
-          opening_npr: todayRecord.closing_npr || 0,
-          opening_inr: todayRecord.closing_inr || 0,
-          notes: `Carried forward from ${format(new Date(todayRecord.date), 'dd MMM yyyy')}`,
-        })
-        .select()
-        .single();
+      // Reset UI to show opening balance form for the new date
+      const prevClosingNpr = todayRecord.closing_npr || 0;
+      const prevClosingInr = todayRecord.closing_inr || 0;
 
-      if (error) throw error;
-
-      toast({
-        title: 'Next Day Started',
-        description: `Opening balance set for ${format(new Date(nextDayDate), 'dd MMM yyyy')}`,
-      });
-      setStartNextDayDialogOpen(false);
-
-      // Always refresh to show the new day as active
-      setTodayRecord(data);
-      setNotes(data.notes || '');
+      setWorkingDate(nextDayDate);
+      setTodayRecord(null);
+      setPreviousDayRecord(todayRecord);
+      setNotes('');
       setOpeningNprDenoms({});
       setOpeningInrDenoms({});
       setClosingNprDenoms({});
       setClosingInrDenoms({});
-      await fetchLedgerData(new Date(nextDayDate), data.opening_npr, data.opening_inr);
+      setStartNextDayDialogOpen(false);
+
+      toast({
+        title: 'Ready for New Day',
+        description: `Enter opening denominations for ${format(new Date(nextDayDate), 'dd MMM yyyy')}. Previous closing: NPR ${prevClosingNpr.toLocaleString()} / INR ${prevClosingInr.toLocaleString()}`,
+      });
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -505,7 +482,7 @@ const CashTracker = () => {
         <div className="min-w-0">
           <h1 className="text-lg sm:text-2xl font-bold leading-tight">Cash Tracker</h1>
           <p className="text-[11px] text-muted-foreground truncate">
-            {format(new Date(), 'MMM d, yyyy')} • {profile?.full_name}
+            {format(new Date(workingDate), 'MMM d, yyyy')} • {profile?.full_name}
           </p>
         </div>
         {todayRecord && ledgerData && (
