@@ -281,13 +281,12 @@ const CashTracker = () => {
         .maybeSingle();
 
       if (existing) {
-        toast({
-          title: 'Record Exists',
-          description: `A record already exists for ${format(new Date(nextDayDate), 'dd MMM yyyy')}. Delete it first to restart.`,
-          variant: 'destructive',
-        });
-        setStartingNextDay(false);
-        return;
+        // Delete existing record and proceed
+        const { error: delError } = await supabase
+          .from('staff_cash_tracker')
+          .delete()
+          .eq('id', existing.id);
+        if (delError) throw delError;
       }
 
       // Reset UI to show opening balance form for the new date
