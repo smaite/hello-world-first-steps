@@ -261,7 +261,7 @@ const Receivings = () => {
   const canDeleteItem = (item: any) => isAdmin || item.staff_id === user?.id;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="min-w-0">
