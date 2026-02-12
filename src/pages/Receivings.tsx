@@ -14,7 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
-import { Send, CheckCircle, Clock, ArrowUpRight, Plus, MoreVertical, Pencil, Trash2, Search, Download, Wallet, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Send, CheckCircle, Clock, ArrowUpRight, Plus, MoreVertical, Pencil, Trash2, Search, Download, Wallet, TrendingDown, AlertTriangle, Eye } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { CardListSkeleton } from '@/components/ui/page-skeleton';
 
@@ -41,6 +42,9 @@ const Receivings = () => {
   // Delete state
   const [deleteItem, setDeleteItem] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // View detail state
+  const [viewItem, setViewItem] = useState<any>(null);
 
   const isAdmin = role === 'owner' || role === 'manager';
 
@@ -456,8 +460,9 @@ const Receivings = () => {
                 {items.map((r: any) => (
                   <div
                     key={r.id}
+                    onClick={() => setViewItem(r)}
                     className={cn(
-                      "relative flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md border-l-4",
+                      "relative flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md border-l-4 cursor-pointer",
                       r.is_confirmed
                         ? "bg-primary/5 border-l-primary"
                         : "bg-yellow-500/5 border-l-yellow-500"
@@ -500,6 +505,9 @@ const Receivings = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setViewItem(r)}>
+                            <Eye className="h-4 w-4 mr-2" />View Details
+                          </DropdownMenuItem>
                           {canEditItem(r) && (
                             <DropdownMenuItem onClick={() => openEdit(r)}>
                               <Pencil className="h-4 w-4 mr-2" />Edit
@@ -593,6 +601,74 @@ const Receivings = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Detail Dialog */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Receiving Details</DialogTitle>
+          </DialogHeader>
+          {viewItem && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {viewItem.is_confirmed ? (
+                  <Badge variant="default" className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Confirmed</Badge>
+                ) : (
+                  <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</Badge>
+                )}
+                <Badge variant="outline" className="capitalize">{viewItem.method}</Badge>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Amount</p>
+                <p className="text-3xl font-bold text-primary">
+                  {viewItem.currency === 'NPR' ? 'रू' : '₹'} {Number(viewItem.amount).toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground">{viewItem.currency}</p>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p className="font-medium">{format(new Date(viewItem.created_at), 'dd/MM/yyyy')}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Time</p>
+                  <p className="font-medium">{format(new Date(viewItem.created_at), 'HH:mm:ss')}</p>
+                </div>
+                {isAdmin && (
+                  <div>
+                    <p className="text-muted-foreground">Staff</p>
+                    <p className="font-medium">{getStaffName(viewItem.staff_id)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-muted-foreground">Method</p>
+                  <p className="font-medium capitalize">{viewItem.method}</p>
+                </div>
+                {viewItem.is_confirmed && viewItem.confirmed_at && (
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Confirmed At</p>
+                    <p className="font-medium">{format(new Date(viewItem.confirmed_at), 'dd/MM/yyyy HH:mm')}</p>
+                  </div>
+                )}
+              </div>
+
+              {viewItem.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-muted-foreground text-sm">Notes</p>
+                    <p className="text-sm mt-1">{viewItem.notes}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
