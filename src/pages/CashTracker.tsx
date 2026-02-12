@@ -274,16 +274,30 @@ const CashTracker = () => {
       // Check if record already exists for that date
       const { data: existing } = await supabase
         .from('staff_cash_tracker')
-        .select('id')
+        .select('*')
         .eq('staff_id', user.id)
         .eq('date', nextDayDate)
         .maybeSingle();
 
       if (existing) {
+        // Record exists — just switch to it
+        setTodayRecord(existing);
+        setNotes(existing.notes || '');
+        setOpeningNprDenoms({});
+        setOpeningInrDenoms({});
+        setClosingNprDenoms({});
+        setClosingInrDenoms({});
+        await fetchLedgerData(
+          new Date(nextDayDate),
+          existing.opening_npr,
+          existing.opening_inr,
+          existing.closing_npr ?? undefined,
+          existing.closing_inr ?? undefined
+        );
+        setStartNextDayDialogOpen(false);
         toast({
-          title: 'Record Exists',
-          description: `A cash tracker record already exists for ${format(new Date(nextDayDate), 'dd MMM yyyy')}. Delete it first if you want to restart.`,
-          variant: 'destructive',
+          title: 'Day Loaded',
+          description: `Switched to ${format(new Date(nextDayDate), 'dd MMM yyyy')}`,
         });
         setStartingNextDay(false);
         return;
