@@ -202,7 +202,7 @@ const DeductionsReceivings = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="deductions" className="mt-3">
-          <Expenses />
+          <Expenses filterCategories={['esewa', 'bank', 'remittance']} hideDeductionButtons={false} title="Deductions" />
         </TabsContent>
         <TabsContent value="receivings" className="mt-3">
           <Receivings />
