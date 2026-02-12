@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight, X, Smartphone, Building2, SendHorizonal, Upload } from 'lucide-react';
+import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight, X, Smartphone, Building2, SendHorizonal, Upload, FileDown, Printer } from 'lucide-react';
+import { generateExpensesPDF, printExpenses } from '@/utils/expensesPrint';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CardListSkeleton } from '@/components/ui/page-skeleton';
@@ -467,9 +468,42 @@ const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: Exp
 
       {/* Filters & Actions */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" onClick={exportToCSV} disabled={filteredExpenses.length === 0} className="gap-2">
-          <Download className="h-4 w-4" /><span className="hidden sm:inline">CSV</span>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Download className="h-3.5 w-3.5" />
+              <span className="text-xs">Export</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={exportToCSV} disabled={filteredExpenses.length === 0} className="gap-2">
+              <Download className="h-4 w-4" />CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              if (filteredExpenses.length === 0) return;
+              generateExpensesPDF({
+                expenses: filteredExpenses,
+                dateLabel: getDateLabel(),
+                title: title || 'Expenses',
+                totals: { npr: totalNPR, inr: totalINR, count: filteredExpenses.length },
+              });
+              toast({ title: 'PDF Generated', description: `${filteredExpenses.length} expenses exported` });
+            }} disabled={filteredExpenses.length === 0} className="gap-2">
+              <FileDown className="h-4 w-4" />Download PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              if (filteredExpenses.length === 0) return;
+              printExpenses({
+                expenses: filteredExpenses,
+                dateLabel: getDateLabel(),
+                title: title || 'Expenses',
+                totals: { npr: totalNPR, inr: totalINR, count: filteredExpenses.length },
+              });
+            }} disabled={filteredExpenses.length === 0} className="gap-2">
+              <Printer className="h-4 w-4" />Print
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
