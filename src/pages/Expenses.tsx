@@ -4,15 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight } from 'lucide-react';
+import { Plus, Loader2, Trash2, Receipt, Download, FileText, Search, MoreVertical, Pencil, Eye, ArrowDownRight, X, Smartphone, Building2, SendHorizonal, Upload } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, startOfDay, endOfDay, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CardListSkeleton } from '@/components/ui/page-skeleton';
@@ -47,6 +47,13 @@ const EXPENSE_CATEGORIES = [
 
 const getCategoryLabel = (value: string) => EXPENSE_CATEGORIES.find(c => c.value === value)?.label || value;
 
+type DeductionCategory = 'esewa' | 'bank' | 'remittance';
+const DEDUCTION_CATEGORIES: { key: DeductionCategory; label: string; icon: typeof Smartphone; description: string }[] = [
+  { key: 'esewa', label: 'eSewa', icon: Smartphone, description: 'Online payment deduction' },
+  { key: 'bank', label: 'Account', icon: Building2, description: 'Bank transfer deduction' },
+  { key: 'remittance', label: 'Remittance', icon: SendHorizonal, description: 'Remittance deduction' },
+];
+
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'month' | 'all';
 
 const Expenses = () => {
@@ -72,6 +79,16 @@ const Expenses = () => {
   // View state
   const [viewExpense, setViewExpense] = useState<Expense | null>(null);
 
+  // File upload states
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [editReceiptFile, setEditReceiptFile] = useState<File | null>(null);
+
+  // Deduction dialog state
+  const [deductionDialogOpen, setDeductionDialogOpen] = useState(false);
+  const [selectedDeduction, setSelectedDeduction] = useState<DeductionCategory | null>(null);
+  const [deductionForm, setDeductionForm] = useState({ description: '', amount: '', currency: 'NPR', notes: '' });
+  const [deductionSaving, setDeductionSaving] = useState(false);
+  const [deductionReceiptFile, setDeductionReceiptFile] = useState<File | null>(null);
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
@@ -85,6 +102,16 @@ const Expenses = () => {
   const canDelete = isOwner() || isManager();
 
   useEffect(() => { fetchExpenses(); }, []);
+
+  const uploadReceipt = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from('receipts').upload(fileName, file);
+    if (uploadError) throw uploadError;
+    const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(fileName);
+    return publicUrl;
+  };
 
   const fetchExpenses = async () => {
     setLoading(true);
@@ -167,6 +194,9 @@ const Expenses = () => {
     }
     setSaving(true);
     try {
+      let receiptUrl = null;
+      if (receiptFile) receiptUrl = await uploadReceipt(receiptFile);
+
       const { error } = await supabase.from('expenses').insert({
         description: newExpense.description,
         amount: parseFloat(newExpense.amount),
@@ -174,17 +204,53 @@ const Expenses = () => {
         category: newExpense.category,
         expense_date: newExpense.expense_date,
         notes: newExpense.notes || null,
+        receipt_url: receiptUrl,
         staff_id: user!.id,
       });
       if (error) throw error;
       toast({ title: 'Success', description: 'Expense recorded' });
       setDialogOpen(false);
       setNewExpense({ description: '', amount: '', currency: 'NPR', category: 'general', expense_date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+      setReceiptFile(null);
       fetchExpenses();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeductionSubmit = async () => {
+    if (!deductionForm.description || !deductionForm.amount || !selectedDeduction) {
+      toast({ title: 'Error', description: 'Please fill required fields', variant: 'destructive' });
+      return;
+    }
+    setDeductionSaving(true);
+    try {
+      let receiptUrl = null;
+      if (deductionReceiptFile) receiptUrl = await uploadReceipt(deductionReceiptFile);
+
+      const { error } = await supabase.from('expenses').insert({
+        description: deductionForm.description,
+        amount: parseFloat(deductionForm.amount),
+        currency: deductionForm.currency,
+        category: selectedDeduction,
+        expense_date: format(new Date(), 'yyyy-MM-dd'),
+        notes: deductionForm.notes || null,
+        receipt_url: receiptUrl,
+        staff_id: user!.id,
+      });
+      if (error) throw error;
+      toast({ title: 'Success', description: `${DEDUCTION_CATEGORIES.find(c => c.key === selectedDeduction)?.label} deduction recorded` });
+      setDeductionDialogOpen(false);
+      setDeductionForm({ description: '', amount: '', currency: 'NPR', notes: '' });
+      setDeductionReceiptFile(null);
+      setSelectedDeduction(null);
+      fetchExpenses();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setDeductionSaving(false);
     }
   };
 
@@ -198,6 +264,7 @@ const Expenses = () => {
       expense_date: expense.expense_date,
       notes: expense.notes || '',
     });
+    setEditReceiptFile(null);
     setEditDialogOpen(true);
   };
 
@@ -205,6 +272,9 @@ const Expenses = () => {
     if (!editExpense || !editForm.description || !editForm.amount) return;
     setEditSaving(true);
     try {
+      let receiptUrl = editExpense.receipt_url;
+      if (editReceiptFile) receiptUrl = await uploadReceipt(editReceiptFile);
+
       const { error } = await supabase.from('expenses').update({
         description: editForm.description,
         amount: parseFloat(editForm.amount),
@@ -212,11 +282,13 @@ const Expenses = () => {
         category: editForm.category,
         expense_date: editForm.expense_date,
         notes: editForm.notes || null,
+        receipt_url: receiptUrl,
       }).eq('id', editExpense.id);
       if (error) throw error;
       toast({ title: 'Success', description: 'Expense updated' });
       setEditDialogOpen(false);
       setEditExpense(null);
+      setEditReceiptFile(null);
       fetchExpenses();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -321,6 +393,18 @@ const Expenses = () => {
                 </div>
               </div>
               <div className="space-y-2">
+                <Label>Slip / Receipt Upload</Label>
+                <div className="flex items-center gap-2">
+                  <Input type="file" accept="image/*,.pdf" onChange={(e) => e.target.files?.[0] && setReceiptFile(e.target.files[0])} className="flex-1" />
+                  {receiptFile && (
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReceiptFile(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {receiptFile && <p className="text-xs text-muted-foreground">📎 {receiptFile.name}</p>}
+              </div>
+              <div className="space-y-2">
                 <Label>Notes</Label>
                 <Textarea value={newExpense.notes} onChange={(e) => setNewExpense({ ...newExpense, notes: e.target.value })} placeholder="Additional notes (optional)" />
               </div>
@@ -333,7 +417,35 @@ const Expenses = () => {
         </Dialog>
       </div>
 
-      {/* Search */}
+      {/* Deduction Quick Buttons */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Receipt className="h-4 w-4" />
+            Quick Deductions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {DEDUCTION_CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => { setSelectedDeduction(cat.key); setDeductionDialogOpen(true); }}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border border-border/50",
+                  "bg-muted/50 hover:bg-muted active:scale-95 transition-all duration-150"
+                )}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <cat.icon className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-xs font-medium">{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input placeholder="Search by description, category, or staff..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
@@ -498,6 +610,19 @@ const Expenses = () => {
               </div>
             </div>
             <div className="space-y-2">
+              <Label>Slip / Receipt Upload</Label>
+              <div className="flex items-center gap-2">
+                <Input type="file" accept="image/*,.pdf" onChange={(e) => e.target.files?.[0] && setEditReceiptFile(e.target.files[0])} className="flex-1" />
+                {editReceiptFile && (
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditReceiptFile(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {editReceiptFile && <p className="text-xs text-muted-foreground">📎 {editReceiptFile.name}</p>}
+              {!editReceiptFile && editExpense?.receipt_url && <p className="text-xs text-muted-foreground">✅ Existing receipt attached</p>}
+            </div>
+            <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
             </div>
@@ -588,6 +713,66 @@ const Expenses = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Deduction Dialog */}
+      <Dialog open={deductionDialogOpen} onOpenChange={(open) => { if (!open) { setDeductionForm({ description: '', amount: '', currency: 'NPR', notes: '' }); setDeductionReceiptFile(null); setSelectedDeduction(null); } setDeductionDialogOpen(open); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedDeduction && (() => {
+                const Icon = DEDUCTION_CATEGORIES.find(c => c.key === selectedDeduction)!.icon;
+                return <Icon className="h-5 w-5 text-primary" />;
+              })()}
+              {DEDUCTION_CATEGORIES.find(c => c.key === selectedDeduction)?.label} Deduction
+            </DialogTitle>
+            <DialogDescription>Amount will be deducted from main balance. Upload slip.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label>Recipient Name *</Label>
+              <Input value={deductionForm.description} onChange={(e) => setDeductionForm({ ...deductionForm, description: e.target.value })} placeholder="e.g., Payment to vendor name" required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Amount *</Label>
+                <Input type="number" value={deductionForm.amount} onChange={(e) => setDeductionForm({ ...deductionForm, amount: e.target.value })} placeholder="0.00" step="0.01" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Currency *</Label>
+                <Select value={deductionForm.currency} onValueChange={(v) => setDeductionForm({ ...deductionForm, currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NPR">NPR</SelectItem>
+                    <SelectItem value="INR">INR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Slip / Receipt Upload</Label>
+              <div className="flex items-center gap-2">
+                <Input type="file" accept="image/*,.pdf" onChange={(e) => e.target.files?.[0] && setDeductionReceiptFile(e.target.files[0])} className="flex-1" />
+                {deductionReceiptFile && (
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeductionReceiptFile(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {deductionReceiptFile && <p className="text-xs text-muted-foreground">📎 {deductionReceiptFile.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea value={deductionForm.notes} onChange={(e) => setDeductionForm({ ...deductionForm, notes: e.target.value })} placeholder="Additional details" rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeductionForm({ description: '', amount: '', currency: 'NPR', notes: '' }); setDeductionReceiptFile(null); setSelectedDeduction(null); setDeductionDialogOpen(false); }}>Cancel</Button>
+            <Button onClick={handleDeductionSubmit} disabled={deductionSaving}>
+              {deductionSaving ? 'Saving...' : 'Deduct & Save'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
