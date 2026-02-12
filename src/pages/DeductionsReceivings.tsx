@@ -17,18 +17,10 @@ import { useToast } from '@/hooks/use-toast';
 import Expenses from './Expenses';
 import Receivings from './Receivings';
 
-const EXPENSE_CATEGORIES = [
-  { value: 'general', label: 'General' },
+const DEDUCTION_CATEGORIES = [
   { value: 'esewa', label: 'eSewa' },
   { value: 'bank', label: 'Account' },
   { value: 'remittance', label: 'Remittance' },
-  { value: 'transport', label: 'Transport' },
-  { value: 'supplies', label: 'Office Supplies' },
-  { value: 'utilities', label: 'Utilities' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'salary', label: 'Salary' },
-  { value: 'rent', label: 'Rent' },
-  { value: 'other', label: 'Other' },
 ];
 
 type ExportMode = 'pdf' | 'print' | null;
@@ -43,7 +35,7 @@ const DeductionsReceivings = () => {
   const [datePreset, setDatePreset] = useState('today');
   const [dateFrom, setDateFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(EXPENSE_CATEGORIES.map(c => c.value));
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(DEDUCTION_CATEGORIES.map(c => c.value));
   const [includeReceivings, setIncludeReceivings] = useState(true);
 
   // Fetch data
@@ -87,7 +79,7 @@ const DeductionsReceivings = () => {
     );
   };
 
-  const selectAllCategories = () => setSelectedCategories(EXPENSE_CATEGORIES.map(c => c.value));
+  const selectAllCategories = () => setSelectedCategories(DEDUCTION_CATEGORIES.map(c => c.value));
   const clearAllCategories = () => setSelectedCategories([]);
 
   const openExportDialog = (mode: ExportMode) => {
@@ -276,7 +268,7 @@ const DeductionsReceivings = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {EXPENSE_CATEGORIES.map(cat => (
+                {DEDUCTION_CATEGORIES.map(cat => (
                   <label key={cat.value} className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-muted/50 transition-colors">
                     <Checkbox
                       checked={selectedCategories.includes(cat.value)}
