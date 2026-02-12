@@ -68,7 +68,7 @@ const MobileDashboard = ({ stats, exchangeRate, loading, selectedDate, onDateCha
   const moreActions = [
     { title: 'Transactions', icon: Receipt, url: '/reports/transactions', permission: 'view_transactions' },
     { title: 'Expenses', icon: Receipt, url: '/expenses', permission: 'view_expenses' },
-    { title: 'Receivings', icon: ArrowUpRight, url: '/reports/receivings' },
+    
     { title: 'Staff', icon: UserCog, url: '/staff', adminOnly: true },
     { title: 'Settings', icon: Settings, url: '/settings', adminOnly: true },
   ];
