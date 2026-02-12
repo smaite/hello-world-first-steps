@@ -271,7 +271,24 @@ const CashTracker = () => {
     if (!user || !todayRecord || !nextDayDate) return;
     setStartingNextDay(true);
     try {
-      // Use today's closing as next day's opening
+      // Check if record already exists for that date
+      const { data: existing } = await supabase
+        .from('staff_cash_tracker')
+        .select('id')
+        .eq('staff_id', user.id)
+        .eq('date', nextDayDate)
+        .maybeSingle();
+
+      if (existing) {
+        toast({
+          title: 'Record Exists',
+          description: `A cash tracker record already exists for ${format(new Date(nextDayDate), 'dd MMM yyyy')}. Delete it first if you want to restart.`,
+          variant: 'destructive',
+        });
+        setStartingNextDay(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('staff_cash_tracker')
         .insert({
@@ -291,11 +308,15 @@ const CashTracker = () => {
         description: `Opening balance set for ${format(new Date(nextDayDate), 'dd MMM yyyy')}`,
       });
       setStartNextDayDialogOpen(false);
-      // If the new day is today, refresh
-      if (nextDayDate === today) {
-        setTodayRecord(data);
-        await fetchLedgerData(new Date(), data.opening_npr, data.opening_inr);
-      }
+
+      // Always refresh to show the new day as active
+      setTodayRecord(data);
+      setNotes(data.notes || '');
+      setOpeningNprDenoms({});
+      setOpeningInrDenoms({});
+      setClosingNprDenoms({});
+      setClosingInrDenoms({});
+      await fetchLedgerData(new Date(nextDayDate), data.opening_npr, data.opening_inr);
     } catch (error: any) {
       toast({
         title: 'Error',
