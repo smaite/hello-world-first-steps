@@ -27,11 +27,15 @@ interface Expense {
   notes: string | null;
   staff_id: string;
   created_at: string;
+  receipt_url: string | null;
   staff_name?: string;
 }
 
 const EXPENSE_CATEGORIES = [
   { value: 'general', label: 'General' },
+  { value: 'esewa', label: 'eSewa' },
+  { value: 'bank', label: 'Account' },
+  { value: 'remittance', label: 'Remittance' },
   { value: 'transport', label: 'Transport' },
   { value: 'supplies', label: 'Office Supplies' },
   { value: 'utilities', label: 'Utilities' },
@@ -40,6 +44,8 @@ const EXPENSE_CATEGORIES = [
   { value: 'rent', label: 'Rent' },
   { value: 'other', label: 'Other' },
 ];
+
+const getCategoryLabel = (value: string) => EXPENSE_CATEGORIES.find(c => c.value === value)?.label || value;
 
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'month' | 'all';
 
@@ -62,6 +68,9 @@ const Expenses = () => {
   // Delete state
   const [deleteExpense, setDeleteExpense] = useState<Expense | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // View state
+  const [viewExpense, setViewExpense] = useState<Expense | null>(null);
 
   const [newExpense, setNewExpense] = useState({
     description: '',
@@ -396,14 +405,15 @@ const Expenses = () => {
                 {dayExpenses.map((expense) => (
                   <div
                     key={expense.id}
-                    className="relative flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md bg-destructive/5 border-l-4 border-l-destructive"
+                    onClick={() => setViewExpense(expense)}
+                    className="relative flex items-center gap-3 p-4 rounded-xl border transition-all hover:shadow-md bg-destructive/5 border-l-4 border-l-destructive cursor-pointer"
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
                       <Receipt className="h-5 w-5 text-destructive" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs capitalize">{expense.category}</Badge>
+                        <Badge variant="secondary" className="text-xs capitalize">{getCategoryLabel(expense.category)}</Badge>
                         <span className="text-xs text-muted-foreground">{expense.staff_name}</span>
                       </div>
                       <p className="font-semibold mt-1 truncate">
@@ -413,20 +423,23 @@ const Expenses = () => {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewExpense(expense); }}>
+                          <Eye className="h-4 w-4 mr-2" />View
+                        </DropdownMenuItem>
                         {canEdit && (
-                          <DropdownMenuItem onClick={() => openEdit(expense)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(expense); }}>
                             <Pencil className="h-4 w-4 mr-2" />Edit
                           </DropdownMenuItem>
                         )}
                         {canDelete && (
                           <>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setDeleteExpense(expense)} className="text-destructive focus:text-destructive">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteExpense(expense); }} className="text-destructive focus:text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />Delete
                             </DropdownMenuItem>
                           </>
@@ -519,6 +532,64 @@ const Expenses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Detail Dialog */}
+      <Dialog open={!!viewExpense} onOpenChange={(open) => !open && setViewExpense(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Expense Details</DialogTitle>
+            <DialogDescription>Full details of this expense entry</DialogDescription>
+          </DialogHeader>
+          {viewExpense && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Description</Label>
+                  <p className="font-medium">{viewExpense.description}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Category</Label>
+                  <Badge variant="secondary" className="capitalize mt-1">{getCategoryLabel(viewExpense.category)}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Amount</Label>
+                  <p className="text-lg font-bold">{viewExpense.currency === 'NPR' ? 'रू' : '₹'} {viewExpense.amount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Date</Label>
+                  <p className="font-medium">{format(parseISO(viewExpense.expense_date), 'MMMM d, yyyy')}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Recorded By</Label>
+                <p className="font-medium">{viewExpense.staff_name || 'Unknown'}</p>
+              </div>
+              {viewExpense.notes && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes</Label>
+                  <p className="text-sm">{viewExpense.notes}</p>
+                </div>
+              )}
+              {viewExpense.receipt_url && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Receipt / Slip</Label>
+                  <div className="mt-2 border rounded-lg overflow-hidden">
+                    <img src={viewExpense.receipt_url} alt="Receipt" className="w-full max-h-64 object-contain bg-muted" />
+                  </div>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => window.open(viewExpense.receipt_url!, '_blank')}>
+                    <Eye className="h-4 w-4 mr-2" />Open Full Size
+                  </Button>
+                </div>
+              )}
+              <div>
+                <Label className="text-xs text-muted-foreground">Created</Label>
+                <p className="text-xs text-muted-foreground">{format(parseISO(viewExpense.created_at), 'MMM d, yyyy h:mm a')}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
