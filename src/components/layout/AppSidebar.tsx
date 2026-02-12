@@ -81,15 +81,10 @@ const AppSidebar = () => {
       permission: "view_transactions",
     },
     {
-      title: "Expenses",
+      title: "Deductions & Receivings",
       url: "/expenses",
       icon: Receipt,
       permission: "view_expenses",
-    },
-    {
-      title: "Receivings",
-      url: "/reports/receivings",
-      icon: Banknote,
     },
   ];
 
