@@ -5,11 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Check, Clock, Printer, RefreshCw, FileText, Trash2 } from 'lucide-react';
+import { Wallet, Check, Clock, Printer, RefreshCw, FileText, Trash2, PlayCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { format, subDays } from 'date-fns';
+import { format, subDays, addDays } from 'date-fns';
 import { DenominationCounter, calculateDenominationTotal } from '@/components/cash-tracker/DenominationCounter';
 import { LedgerSummary } from '@/components/cash-tracker/LedgerSummary';
 import { EditClosingBalanceDialog } from '@/components/cash-tracker/EditClosingBalanceDialog';
@@ -51,6 +52,10 @@ const CashTracker = () => {
   const [notes, setNotes] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const [startNextDayDialogOpen, setStartNextDayDialogOpen] = useState(false);
+  const [nextDayDate, setNextDayDate] = useState('');
+  const [startingNextDay, setStartingNextDay] = useState(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
@@ -260,6 +265,45 @@ const CashTracker = () => {
       });
     } finally {
       setDeleting(false);
+    }
+  };
+  const handleStartNextDay = async () => {
+    if (!user || !todayRecord || !nextDayDate) return;
+    setStartingNextDay(true);
+    try {
+      // Use today's closing as next day's opening
+      const { data, error } = await supabase
+        .from('staff_cash_tracker')
+        .insert({
+          staff_id: user.id,
+          date: nextDayDate,
+          opening_npr: todayRecord.closing_npr || 0,
+          opening_inr: todayRecord.closing_inr || 0,
+          notes: `Carried forward from ${format(new Date(todayRecord.date), 'dd MMM yyyy')}`,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: 'Next Day Started',
+        description: `Opening balance set for ${format(new Date(nextDayDate), 'dd MMM yyyy')}`,
+      });
+      setStartNextDayDialogOpen(false);
+      // If the new day is today, refresh
+      if (nextDayDate === today) {
+        setTodayRecord(data);
+        await fetchLedgerData(new Date(), data.opening_npr, data.opening_inr);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setStartingNextDay(false);
     }
   };
 
@@ -492,6 +536,21 @@ const CashTracker = () => {
         </div>
       </div>
 
+      {/* Start Next Day Button */}
+      {todayRecord?.is_closed && (
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => {
+            setNextDayDate(format(addDays(new Date(todayRecord.date), 1), 'yyyy-MM-dd'));
+            setStartNextDayDialogOpen(true);
+          }}
+        >
+          <PlayCircle className="h-4 w-4" />
+          Start Next Day
+        </Button>
+      )}
+
       {/* Opening Balance Form */}
       {!todayRecord && (
         <Card className="border-border/50">
@@ -611,6 +670,28 @@ const CashTracker = () => {
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteDay} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Start Next Day Dialog */}
+      <AlertDialog open={startNextDayDialogOpen} onOpenChange={setStartNextDayDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start Next Day</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new day record using today's closing balance (NPR {formatCurrency(todayRecord?.closing_npr || 0, 'NPR')} / {formatCurrency(todayRecord?.closing_inr || 0, 'INR')}) as the opening balance.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-3">
+            <Label className="text-xs">Date for next day</Label>
+            <Input type="date" value={nextDayDate} onChange={(e) => setNextDayDate(e.target.value)} className="mt-1" />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={startingNextDay}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleStartNextDay} disabled={startingNextDay || !nextDayDate}>
+              {startingNextDay ? 'Starting...' : 'Start Day'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
