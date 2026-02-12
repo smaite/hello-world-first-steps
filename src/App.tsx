@@ -22,6 +22,7 @@ import StaffSalary from "./pages/StaffSalary";
 import Expenses from "./pages/Expenses";
 import UserActivity from "./pages/UserActivity";
 import DeductionsReceivings from "./pages/DeductionsReceivings";
+import EditProfile from "./pages/EditProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/staff/salary" element={<StaffSalary />} />
               <Route path="/activity" element={<UserActivity />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/profile" element={<EditProfile />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

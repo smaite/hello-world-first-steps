@@ -45,7 +45,7 @@ const MobileHeader = () => {
               <p className="text-xs font-medium text-foreground">{profile?.full_name}</p>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <UserPen className="h-4 w-4 mr-2" />
                 Edit Profile
               </DropdownMenuItem>
