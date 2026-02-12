@@ -62,7 +62,7 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('NPR ⇄ INR Currency Exchange Services', 14, 24);
+  doc.text('NPR <-> INR Currency Exchange Services', 14, 24);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
