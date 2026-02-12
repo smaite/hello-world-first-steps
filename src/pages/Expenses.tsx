@@ -75,6 +75,7 @@ const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: Exp
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('today');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
 
   // Edit state
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
@@ -146,11 +147,19 @@ const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: Exp
     }
   };
 
+  // Available categories for the filter dropdown
+  const availableCategories = useMemo(() => {
+    const cats = filterCategories || EXPENSE_CATEGORIES.map(c => c.value);
+    return EXPENSE_CATEGORIES.filter(c => cats.includes(c.value));
+  }, [filterCategories]);
+
   const filteredExpenses = useMemo(() => {
     const today = new Date();
     return expenses.filter(expense => {
-      // Category filter
+      // Category filter (prop-level)
       if (filterCategories && !filterCategories.includes(expense.category)) return false;
+      // Category filter (user-selected)
+      if (selectedCategoryFilter !== 'all' && expense.category !== selectedCategoryFilter) return false;
       
       const expenseDate = parseISO(expense.expense_date);
       let dateMatch = true;
@@ -176,7 +185,7 @@ const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: Exp
         expense.staff_name?.toLowerCase().includes(searchQuery.toLowerCase());
       return dateMatch && searchMatch;
     });
-  }, [expenses, datePreset, searchQuery, filterCategories]);
+  }, [expenses, datePreset, searchQuery, filterCategories, selectedCategoryFilter]);
 
   const totalNPR = filteredExpenses.filter(e => e.currency === 'NPR').reduce((sum, e) => sum + e.amount, 0);
   const totalINR = filteredExpenses.filter(e => e.currency === 'INR').reduce((sum, e) => sum + e.amount, 0);
@@ -512,6 +521,13 @@ const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: Exp
             <SelectItem value="last7days">Last 7 Days</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
             <SelectItem value="all">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedCategoryFilter} onValueChange={setSelectedCategoryFilter}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {availableCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
