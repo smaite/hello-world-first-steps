@@ -40,11 +40,10 @@ export interface PrintData {
 
 const BLACK: [number, number, number] = [0, 0, 0];
 const DARK: [number, number, number] = [51, 51, 51];
-const GREEN: [number, number, number] = [45, 90, 39];
-const GREEN_LIGHT: [number, number, number] = [61, 122, 55];
 const GRAY: [number, number, number] = [120, 120, 120];
-const TABLE_HEAD_BG: [number, number, number] = [245, 245, 245];
-const ALT_ROW: [number, number, number] = [250, 250, 250];
+const WHITE: [number, number, number] = [255, 255, 255];
+const TABLE_HEAD_BG: [number, number, number] = [240, 240, 240];
+const ALT_ROW: [number, number, number] = [248, 248, 248];
 
 export const generateDeductionsReceivingsPDF = (data: PrintData) => {
   const doc = new jsPDF();
@@ -52,38 +51,42 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
   const ph = doc.internal.pageSize.getHeight();
   let y = 0;
 
-  // === HEADER BAR (Green) ===
-  doc.setFillColor(...GREEN);
-  doc.rect(0, 0, pw, 32, 'F');
+  // === HEADER (no fill, just text) ===
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(0.5);
+  doc.line(14, 8, pw - 14, 8);
 
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...BLACK);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('MADANI MONEY EXCHANGE', 14, 14);
+  doc.text('MADANI MONEY EXCHANGE', 14, 18);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('NPR <-> INR Currency Exchange Services', 14, 21);
+  doc.setTextColor(...GRAY);
+  doc.text('NPR <-> INR Currency Exchange Services', 14, 24);
 
+  doc.setTextColor(...BLACK);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('Deductions & Receivings', pw - 14, 12, { align: 'right' });
+  doc.text('Deductions & Receivings', pw - 14, 14, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(`Period: ${data.dateLabel}`, pw - 14, 19, { align: 'right' });
+  doc.setTextColor(...GRAY);
+  doc.text(`Period: ${data.dateLabel}`, pw - 14, 20, { align: 'right' });
   doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pw - 14, 25, { align: 'right' });
 
-  // Thin black line under header
-  doc.setFillColor(...BLACK);
-  doc.rect(0, 32, pw, 1, 'F');
+  doc.setDrawColor(...BLACK);
+  doc.setLineWidth(0.5);
+  doc.line(14, 28, pw - 14, 28);
 
-  y = 42;
+  y = 38;
 
-  // === SUMMARY SECTION ===
+  // === SUMMARY CARDS (bordered, no fill) ===
   const cardW = (pw - 42) / 3;
-  const cardH = 26;
+  const cardH = 24;
   const cards = [
-    { title: 'TOTAL EXPENSES', npr: data.totals.expensesNPR, inr: data.totals.expensesINR },
+    { title: 'TOTAL DEDUCTIONS', npr: data.totals.expensesNPR, inr: data.totals.expensesINR },
     { title: 'TOTAL RECEIVED', npr: data.totals.receivedNPR, inr: data.totals.receivedINR },
     { title: 'REMAINING', npr: Math.abs(data.totals.remainingNPR), inr: Math.abs(data.totals.remainingINR) },
   ];
@@ -91,46 +94,39 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
   cards.forEach((card, i) => {
     const x = 14 + i * (cardW + 7);
 
-    // Card border
     doc.setDrawColor(...BLACK);
     doc.setLineWidth(0.3);
     doc.rect(x, y, cardW, cardH);
-
-    // Left green accent
-    doc.setFillColor(...GREEN);
-    doc.rect(x, y, 2, cardH, 'F');
 
     // Title
     doc.setTextColor(...GRAY);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text(card.title, x + 6, y + 8);
+    doc.text(card.title, x + 4, y + 7);
 
     // NPR value
     doc.setTextColor(...BLACK);
-    doc.setFontSize(13);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Rs ${card.npr.toLocaleString('en-IN')}`, x + 6, y + 16);
+    doc.text(`Rs ${card.npr.toLocaleString('en-IN')}`, x + 4, y + 16);
 
     // INR value
     if (card.inr > 0) {
       doc.setTextColor(...GRAY);
       doc.setFontSize(9);
-      doc.text(`INR ${card.inr.toLocaleString('en-IN')}`, x + 6, y + 22);
+      doc.text(`INR ${card.inr.toLocaleString('en-IN')}`, x + 4, y + 21);
     }
   });
 
-  y += cardH + 12;
+  y += cardH + 10;
 
   // === DEDUCTIONS TABLE ===
   if (data.expenses.length > 0) {
-    // Section header (green bar)
-    doc.setFillColor(...GREEN);
-    doc.rect(14, y, pw - 28, 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
+    // Section header (text only with underline)
+    doc.setTextColor(...BLACK);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`DEDUCTIONS  (${data.expenses.length} records)`, 18, y + 5.5);
+    doc.text(`Deductions (${data.expenses.length} records)`, 14, y + 5);
 
     // Category totals on right
     const catTotals = data.expenses.reduce((acc, e) => {
@@ -141,7 +137,12 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
     const catSummary = Object.entries(catTotals).map(([k, v]) => `${k}: Rs ${v.toLocaleString('en-IN')}`).join('  |  ');
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(catSummary, pw - 18, y + 5.5, { align: 'right' });
+    doc.setTextColor(...GRAY);
+    doc.text(catSummary, pw - 14, y + 5, { align: 'right' });
+
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.3);
+    doc.line(14, y + 7, pw - 14, y + 7);
 
     y += 10;
 
@@ -161,7 +162,7 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
       styles: { fontSize: 7.5, cellPadding: 2.5, textColor: DARK },
       headStyles: {
         fillColor: TABLE_HEAD_BG,
-        textColor: DARK,
+        textColor: BLACK,
         fontStyle: 'bold',
         fontSize: 7,
       },
@@ -174,12 +175,13 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
       },
       margin: { left: 14, right: 14 },
       didDrawPage: () => {
-        doc.setFillColor(...GREEN);
-        doc.rect(0, 0, pw, 10, 'F');
-        doc.setTextColor(255);
+        doc.setTextColor(...BLACK);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.text('MADANI MONEY EXCHANGE -- Deductions & Receivings Report', 14, 7);
+        doc.setDrawColor(...BLACK);
+        doc.setLineWidth(0.3);
+        doc.line(14, 9, pw - 14, 9);
       },
     });
 
@@ -193,18 +195,21 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
       y = 20;
     }
 
-    doc.setFillColor(...GREEN_LIGHT);
-    doc.rect(14, y, pw - 28, 8, 'F');
-    doc.setTextColor(255);
-    doc.setFontSize(9);
+    doc.setTextColor(...BLACK);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`RECEIVINGS  (${data.receivings.length} records)`, 18, y + 5.5);
+    doc.text(`Receivings (${data.receivings.length} records)`, 14, y + 5);
 
     const confirmedCount = data.receivings.filter(r => r.is_confirmed).length;
     const pendingCount = data.receivings.length - confirmedCount;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Confirmed: ${confirmedCount}  |  Pending: ${pendingCount}`, pw - 18, y + 5.5, { align: 'right' });
+    doc.setTextColor(...GRAY);
+    doc.text(`Confirmed: ${confirmedCount}  |  Pending: ${pendingCount}`, pw - 14, y + 5, { align: 'right' });
+
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.3);
+    doc.line(14, y + 7, pw - 14, y + 7);
 
     y += 10;
 
@@ -224,7 +229,7 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
       styles: { fontSize: 7.5, cellPadding: 2.5, textColor: DARK },
       headStyles: {
         fillColor: TABLE_HEAD_BG,
-        textColor: DARK,
+        textColor: BLACK,
         fontStyle: 'bold',
         fontSize: 7,
       },
@@ -236,13 +241,6 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
         5: { cellWidth: 18, halign: 'center' },
       },
       margin: { left: 14, right: 14 },
-      didParseCell: (hookData) => {
-        if (hookData.section === 'body' && hookData.column.index === 5) {
-          const val = hookData.cell.raw as string;
-          hookData.cell.styles.fontStyle = 'bold';
-          hookData.cell.styles.textColor = val === 'Confirmed' ? GREEN : DARK;
-        }
-      },
     });
   }
 
@@ -251,8 +249,8 @@ export const generateDeductionsReceivingsPDF = (data: PrintData) => {
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
 
-    doc.setDrawColor(...GREEN);
-    doc.setLineWidth(0.5);
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(0.3);
     doc.line(14, ph - 14, pw - 14, ph - 14);
 
     doc.setFontSize(7);
@@ -276,39 +274,33 @@ export const printDeductionsReceivings = (data: PrintData) => {
         @page { size: A4; margin: 12mm; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; font-size: 10px; line-height: 1.5; background: #fff; }
 
-        .header { background: #2d5a27; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 18px; letter-spacing: -0.3px; }
-        .header .sub { font-size: 8px; opacity: 0.8; margin-top: 2px; }
-        .header .meta { text-align: right; font-size: 8px; }
-        .header .meta .title { font-size: 11px; font-weight: 600; }
+        .header { padding: 12px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header h1 { font-size: 18px; color: #000; }
+        .header .sub { font-size: 8px; color: #888; margin-top: 2px; }
+        .header .meta { text-align: right; font-size: 8px; color: #888; }
+        .header .meta .title { font-size: 11px; font-weight: 600; color: #000; }
 
-        .accent-bar { height: 2px; background: #000; }
-
-        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px; }
-        .summary-card { background: #fff; border: 1px solid #ddd; padding: 12px 14px; position: relative; }
-        .summary-card::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: #2d5a27; }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 0; }
+        .summary-card { border: 1px solid #333; padding: 10px 12px; }
         .summary-card .label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 4px; }
         .summary-card .value { font-size: 16px; font-weight: 800; color: #000; }
         .summary-card .value-inr { font-size: 11px; font-weight: 700; margin-top: 2px; color: #666; }
 
-        .section { margin: 16px 0 0; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2d5a27; color: #fff; font-size: 9px; font-weight: 700; }
-        .section-header .badge { font-size: 7px; font-weight: 400; opacity: 0.85; }
+        .section { margin: 12px 0 0; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; border-bottom: 1px solid #333; margin-bottom: 4px; }
+        .section-header .title { font-size: 11px; font-weight: 700; color: #000; }
+        .section-header .badge { font-size: 7px; color: #888; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 0; }
-        thead th { background: #f5f5f5; padding: 6px 8px; text-align: left; font-size: 7px; font-weight: 700; color: #333; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid #ddd; }
+        thead th { background: #f0f0f0; padding: 6px 8px; text-align: left; font-size: 7px; font-weight: 700; color: #333; text-transform: uppercase; border-bottom: 1px solid #ccc; }
         tbody td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 9px; color: #333; }
-        tbody tr:nth-child(even) { background: #fafafa; }
+        tbody tr:nth-child(even) { background: #f8f8f8; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .font-bold { font-weight: 700; }
         .text-muted { color: #999; }
-        .badge { display: inline-block; padding: 1px 6px; font-size: 7px; font-weight: 700; }
-        .badge-confirmed { background: #e8f5e9; color: #2d5a27; }
-        .badge-pending { background: #f5f5f5; color: #333; }
-        .category-tag { display: inline-block; padding: 1px 6px; font-size: 7px; font-weight: 600; background: #f0f0f0; color: #333; }
 
-        .footer { margin-top: 20px; padding-top: 10px; border-top: 2px solid #2d5a27; display: flex; justify-content: space-between; font-size: 7px; color: #999; }
+        .footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 7px; color: #999; }
 
         @media print {
           body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -327,11 +319,10 @@ export const printDeductionsReceivings = (data: PrintData) => {
           <div>Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}</div>
         </div>
       </div>
-      <div class="accent-bar"></div>
 
       <div class="summary">
         <div class="summary-card">
-          <div class="label">Total Expenses</div>
+          <div class="label">Total Deductions</div>
           <div class="value">Rs ${data.totals.expensesNPR.toLocaleString('en-IN')}</div>
           ${data.totals.expensesINR > 0 ? `<div class="value-inr">INR ${data.totals.expensesINR.toLocaleString('en-IN')}</div>` : ''}
         </div>
@@ -350,7 +341,7 @@ export const printDeductionsReceivings = (data: PrintData) => {
       ${data.expenses.length > 0 ? `
         <div class="section">
           <div class="section-header">
-            <span>DEDUCTIONS (${data.expenses.length} records)</span>
+            <span class="title">Deductions (${data.expenses.length} records)</span>
             <span class="badge">NPR: Rs ${data.totals.expensesNPR.toLocaleString('en-IN')} ${data.totals.expensesINR > 0 ? `| INR: ${data.totals.expensesINR.toLocaleString('en-IN')}` : ''}</span>
           </div>
           <table>
@@ -360,7 +351,7 @@ export const printDeductionsReceivings = (data: PrintData) => {
                 <td class="text-center text-muted">${i + 1}</td>
                 <td>${format(new Date(e.expense_date), 'dd/MM/yy')}</td>
                 <td>${e.description}</td>
-                <td><span class="category-tag">${e.category}</span></td>
+                <td>${e.category}</td>
                 <td class="text-right font-bold">${e.amount.toLocaleString('en-IN')}</td>
                 <td class="text-center">${e.currency}</td>
                 <td>${e.staff_name || '-'}</td>
@@ -374,7 +365,7 @@ export const printDeductionsReceivings = (data: PrintData) => {
       ${data.includeReceivings && data.receivings.length > 0 ? `
         <div class="section">
           <div class="section-header">
-            <span>RECEIVINGS (${data.receivings.length} records)</span>
+            <span class="title">Receivings (${data.receivings.length} records)</span>
             <span class="badge">Confirmed: ${data.receivings.filter(r => r.is_confirmed).length} | Pending: ${data.receivings.filter(r => !r.is_confirmed).length}</span>
           </div>
           <table>
@@ -386,7 +377,7 @@ export const printDeductionsReceivings = (data: PrintData) => {
                 <td class="text-right font-bold">${Number(r.amount).toLocaleString('en-IN')}</td>
                 <td class="text-center">${r.currency}</td>
                 <td>${r.method}</td>
-                <td class="text-center"><span class="badge ${r.is_confirmed ? 'badge-confirmed' : 'badge-pending'}">${r.is_confirmed ? 'Confirmed' : 'Pending'}</span></td>
+                <td class="text-center">${r.is_confirmed ? 'Confirmed' : 'Pending'}</td>
                 <td>${data.getStaffName ? data.getStaffName(r.staff_id) : '-'}</td>
                 <td class="text-muted">${r.notes || '-'}</td>
               </tr>`).join('')}
