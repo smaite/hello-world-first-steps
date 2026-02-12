@@ -56,7 +56,16 @@ const DEDUCTION_CATEGORIES: { key: DeductionCategory; label: string; icon: typeo
 
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'month' | 'all';
 
-const Expenses = () => {
+const DEDUCTION_CATEGORY_KEYS = ['esewa', 'bank', 'remittance'];
+const GENERAL_EXPENSE_KEYS = EXPENSE_CATEGORIES.map(c => c.value).filter(v => !DEDUCTION_CATEGORY_KEYS.includes(v));
+
+interface ExpensesProps {
+  filterCategories?: string[];
+  hideDeductionButtons?: boolean;
+  title?: string;
+}
+
+const Expenses = ({ filterCategories, hideDeductionButtons = false, title }: ExpensesProps = {}) => {
   const { user, isOwner, isManager, hasPermission } = useAuth();
   const { toast } = useToast();
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -139,6 +148,9 @@ const Expenses = () => {
   const filteredExpenses = useMemo(() => {
     const today = new Date();
     return expenses.filter(expense => {
+      // Category filter
+      if (filterCategories && !filterCategories.includes(expense.category)) return false;
+      
       const expenseDate = parseISO(expense.expense_date);
       let dateMatch = true;
       switch (datePreset) {
@@ -163,7 +175,7 @@ const Expenses = () => {
         expense.staff_name?.toLowerCase().includes(searchQuery.toLowerCase());
       return dateMatch && searchMatch;
     });
-  }, [expenses, datePreset, searchQuery]);
+  }, [expenses, datePreset, searchQuery, filterCategories]);
 
   const totalNPR = filteredExpenses.filter(e => e.currency === 'NPR').reduce((sum, e) => sum + e.amount, 0);
   const totalINR = filteredExpenses.filter(e => e.currency === 'INR').reduce((sum, e) => sum + e.amount, 0);
@@ -344,7 +356,7 @@ const Expenses = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-3xl font-bold">Expenses</h1>
+          <h1 className="text-lg sm:text-3xl font-bold">{title || 'Expenses'}</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">{getDateLabel()} • {filteredExpenses.length} expenses</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -383,7 +395,7 @@ const Expenses = () => {
                   <Select value={newExpense.category} onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {EXPENSE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {(filterCategories ? EXPENSE_CATEGORIES.filter(c => filterCategories.includes(c.value)) : EXPENSE_CATEGORIES).map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -418,6 +430,7 @@ const Expenses = () => {
       </div>
 
       {/* Deduction Quick Buttons */}
+      {!hideDeductionButtons && (
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -445,6 +458,7 @@ const Expenses = () => {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />

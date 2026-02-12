@@ -45,6 +45,7 @@ const MobileBottomNav = () => {
     { title: 'Daily Reports', url: '/reports/daily', icon: FileText, permission: 'view_daily_reports' },
     { title: 'Monthly Reports', url: '/reports/monthly', icon: FileText, permission: 'view_daily_reports' },
     { title: 'Transactions', url: '/reports/transactions', icon: Receipt, permission: 'view_transactions' },
+    { title: 'Expenses', url: '/general-expenses', icon: Receipt, permission: 'view_expenses' },
     { title: 'Deductions & Receivings', url: '/expenses', icon: Receipt, permission: 'view_expenses' },
   ];
 

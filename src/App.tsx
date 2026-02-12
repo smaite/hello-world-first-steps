@@ -49,6 +49,7 @@ const App = () => (
               <Route path="/reports/monthly" element={<MonthlyReports />} />
               <Route path="/reports/transactions" element={<Transactions />} />
               <Route path="/expenses" element={<DeductionsReceivings />} />
+              <Route path="/general-expenses" element={<Expenses filterCategories={['general', 'transport', 'supplies', 'utilities', 'maintenance', 'salary', 'rent', 'other']} hideDeductionButtons={true} title="Expenses" />} />
               <Route path="/staff" element={<StaffManagement />} />
               <Route path="/staff/salary" element={<StaffSalary />} />
               <Route path="/activity" element={<UserActivity />} />
