@@ -9,12 +9,14 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import PendingApproval from '@/pages/PendingApproval';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useKeybinds } from '@/hooks/useKeybinds';
 
 const AppLayout = () => {
   const { user, loading, isPending, isOwner, isManager } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   useActivityTracker();
+  useKeybinds();
 
   useEffect(() => {
     if (!loading && !user) {
