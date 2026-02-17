@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   ArrowLeftRight,
@@ -18,6 +19,8 @@ import {
   Trash2,
   Keyboard,
   RotateCw,
+  UserPen,
+  Crown,
 } from 'lucide-react';
 import { FormSkeleton } from '@/components/ui/page-skeleton';
 import {
@@ -31,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { getKeybinds, saveKeybinds, resetKeybinds, type KeyBind } from '@/hooks/useKeybinds';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const SettingsItem = ({
   icon: Icon,
@@ -77,9 +81,10 @@ const SettingsGroup = ({ title, children }: { title: string; children: React.Rea
 );
 
 const Settings = () => {
-  const { isOwner, signOut } = useAuth();
+  const { isOwner, signOut, profile, role } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -178,9 +183,23 @@ const Settings = () => {
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-24">
-      <div className="pt-2">
-        <h1 className="text-2xl font-bold">Settings</h1>
-      </div>
+      {/* Profile Header */}
+      <button
+        onClick={() => navigate('/profile')}
+        className="w-full flex items-center gap-3 pt-4 pb-2 text-left group"
+      >
+        <Avatar className="h-14 w-14">
+          <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+            {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-semibold truncate">{profile?.full_name || 'User'}</p>
+          <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
+          <p className="text-xs text-muted-foreground capitalize">{role}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </button>
 
       {/* General */}
       <SettingsGroup title="General">
@@ -199,6 +218,16 @@ const Settings = () => {
               onCheckedChange={(c) => setTheme(c ? 'dark' : 'light')}
             />
           }
+        />
+      </SettingsGroup>
+
+      {/* Subscription */}
+      <SettingsGroup title="Subscription">
+        <SettingsItem
+          icon={Crown}
+          label="Manage Subscriptions"
+          description="Create plans and assign to users"
+          onClick={() => navigate('/subscriptions')}
         />
       </SettingsGroup>
 
