@@ -187,23 +187,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Exchange Rate Card */}
+      {/* Current Stock Card */}
       <Card className="bg-primary text-primary-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Current Exchange Rates
+            <Wallet className="h-5 w-5" />
+            Current Stock
           </CardTitle>
+          <CardDescription className="text-primary-foreground/70">Cash remaining after today's transactions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <p className="text-sm opacity-80">NPR → INR</p>
-              <p className="text-3xl font-bold">1 : {exchangeRate.nprToInr}</p>
+              <p className="text-sm opacity-80">NPR Balance</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.openingNpr + stats.nprIn - stats.nprOut, 'NPR')}</p>
+              <p className="text-xs opacity-60 mt-1">Opening {formatCurrency(stats.openingNpr, 'NPR')} + In {formatCurrency(stats.nprIn, 'NPR')} − Out {formatCurrency(stats.nprOut, 'NPR')}</p>
             </div>
             <div>
-              <p className="text-sm opacity-80">INR → NPR</p>
-              <p className="text-3xl font-bold">1 : {exchangeRate.inrToNpr}</p>
+              <p className="text-sm opacity-80">INR Balance</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.openingInr + stats.inrIn - stats.inrOut, 'INR')}</p>
+              <p className="text-xs opacity-60 mt-1">Opening {formatCurrency(stats.openingInr, 'INR')} + In {formatCurrency(stats.inrIn, 'INR')} − Out {formatCurrency(stats.inrOut, 'INR')}</p>
             </div>
           </div>
         </CardContent>
