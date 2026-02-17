@@ -1,19 +1,87 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, ArrowLeftRight, Save } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import {
+  Settings as SettingsIcon,
+  ArrowLeftRight,
+  Save,
+  Moon,
+  RotateCcw,
+  ChevronRight,
+  LogOut,
+  Trash2,
+} from 'lucide-react';
 import { FormSkeleton } from '@/components/ui/page-skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+const SettingsItem = ({
+  icon: Icon,
+  label,
+  description,
+  onClick,
+  trailing,
+  destructive,
+}: {
+  icon: React.ElementType;
+  label: string;
+  description?: string;
+  onClick?: () => void;
+  trailing?: React.ReactNode;
+  destructive?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 ${
+      destructive ? 'text-destructive' : ''
+    }`}
+  >
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+      <Icon className={`h-4 w-4 ${destructive ? 'text-destructive' : 'text-muted-foreground'}`} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className={`text-sm font-medium ${destructive ? 'text-destructive' : ''}`}>{label}</p>
+      {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+    </div>
+    {trailing ?? (onClick ? <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" /> : null)}
+  </button>
+);
+
+const SettingsGroup = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="space-y-1">
+    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
+      {title}
+    </p>
+    <div className="rounded-xl border bg-card divide-y divide-border overflow-hidden">
+      {children}
+    </div>
+  </div>
+);
 
 const Settings = () => {
-  const { isOwner } = useAuth();
+  const { isOwner, signOut } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showRatesDialog, setShowRatesDialog] = useState(false);
   const [inrToNprRate, setInrToNprRate] = useState('');
   const [nprToInrRate, setNprToInrRate] = useState('');
 
@@ -29,7 +97,7 @@ const Settings = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      
+
       if (data) {
         setInrToNprRate(data.inr_to_npr_rate.toString());
         setNprToInrRate(data.npr_to_inr_rate.toString());
@@ -67,18 +135,29 @@ const Settings = () => {
         if (error) throw error;
       }
 
-      toast({
-        title: 'Settings Saved',
-        description: 'Exchange rates have been updated',
-      });
+      toast({ title: 'Settings Saved', description: 'Exchange rates have been updated' });
+      setShowRatesDialog(false);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('reset-app', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (res.error) throw res.error;
+      toast({ title: 'App Reset', description: `All data cleared. ${res.data.deleted_users} users removed.` });
+      setShowResetDialog(false);
+    } catch (error: any) {
+      toast({ title: 'Reset Failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -90,66 +169,124 @@ const Settings = () => {
     );
   }
 
-  if (loading) {
-    return <FormSkeleton />;
-  }
+  if (loading) return <FormSkeleton />;
 
   return (
-    <div className="space-y-6">
-      <div>
-         <h1 className="text-lg sm:text-3xl font-bold flex items-center gap-2">
-           <SettingsIcon className="h-5 w-5 sm:h-8 sm:w-8" />
-           Settings
-         </h1>
-         <p className="text-xs sm:text-sm text-muted-foreground">Configure preferences</p>
+    <div className="max-w-lg mx-auto space-y-6 pb-24">
+      <div className="pt-2">
+        <h1 className="text-2xl font-bold">Settings</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ArrowLeftRight className="h-5 w-5" />
-            Custom Exchange Rates
-          </CardTitle>
-          <CardDescription>
-            Set the default exchange rates for INR ⇄ NPR conversions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+      {/* General */}
+      <SettingsGroup title="General">
+        <SettingsItem
+          icon={ArrowLeftRight}
+          label="Exchange Rates"
+          description={`1 INR = ${inrToNprRate || '—'} NPR`}
+          onClick={() => setShowRatesDialog(true)}
+        />
+        <SettingsItem
+          icon={Moon}
+          label="Dark Mode"
+          trailing={
+            <Switch
+              checked={theme === 'dark'}
+              onCheckedChange={(c) => setTheme(c ? 'dark' : 'light')}
+            />
+          }
+        />
+      </SettingsGroup>
+
+      {/* Danger Zone */}
+      <SettingsGroup title="Danger Zone">
+        <SettingsItem
+          icon={Trash2}
+          label="Reset App"
+          description="Delete all data & non-owner users"
+          onClick={() => setShowResetDialog(true)}
+          destructive
+        />
+      </SettingsGroup>
+
+      {/* Account */}
+      <div className="pt-2">
+        <button
+          onClick={() => signOut()}
+          className="flex items-center gap-3 px-1 py-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="text-sm font-medium">Sign out</span>
+        </button>
+      </div>
+
+      {/* Exchange Rates Dialog */}
+      <AlertDialog open={showRatesDialog} onOpenChange={setShowRatesDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ArrowLeftRight className="h-5 w-5" />
+              Exchange Rates
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Set the default exchange rates for INR ⇄ NPR conversions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-2">
             <div className="space-y-2">
-              <Label>INR → NPR Rate</Label>
+              <Label>INR → NPR</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={inrToNprRate}
                 onChange={(e) => setInrToNprRate(e.target.value)}
-                placeholder="e.g. 1.60"
+                placeholder="1.60"
               />
             </div>
             <div className="space-y-2">
-              <Label>NPR → INR Rate</Label>
+              <Label>NPR → INR</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={nprToInrRate}
                 onChange={(e) => setNprToInrRate(e.target.value)}
-                placeholder="e.g. 0.625"
+                placeholder="0.625"
               />
             </div>
           </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSave} disabled={saving}>
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Saving...' : 'Save'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm">
-              <strong>Current Rates:</strong> 1 INR = {inrToNprRate || '—'} NPR | 1 NPR = {nprToInrRate || '—'} INR
-            </p>
-          </div>
-
-          <Button onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Settings'}
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Reset Entire App?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>all transactions, customers, expenses, bank accounts, reports, staff users</strong> and their auth accounts. Only owner accounts will be preserved. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReset}
+              disabled={resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? 'Resetting...' : 'Yes, Reset Everything'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
