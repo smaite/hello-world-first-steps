@@ -16,6 +16,8 @@ import {
   ChevronRight,
   LogOut,
   Trash2,
+  Keyboard,
+  RotateCw,
 } from 'lucide-react';
 import { FormSkeleton } from '@/components/ui/page-skeleton';
 import {
@@ -28,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { getKeybinds, saveKeybinds, resetKeybinds, type KeyBind } from '@/hooks/useKeybinds';
 
 const SettingsItem = ({
   icon: Icon,
@@ -82,6 +85,8 @@ const Settings = () => {
   const [resetting, setResetting] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showRatesDialog, setShowRatesDialog] = useState(false);
+  const [showKeybindsDialog, setShowKeybindsDialog] = useState(false);
+  const [keybindEdits, setKeybindEdits] = useState<KeyBind[]>(getKeybinds());
   const [inrToNprRate, setInrToNprRate] = useState('');
   const [nprToInrRate, setNprToInrRate] = useState('');
 
@@ -197,6 +202,19 @@ const Settings = () => {
         />
       </SettingsGroup>
 
+      {/* Shortcuts */}
+      <SettingsGroup title="Shortcuts">
+        <SettingsItem
+          icon={Keyboard}
+          label="Keyboard Shortcuts"
+          description="Press a key to navigate to a page"
+          onClick={() => {
+            setKeybindEdits(getKeybinds());
+            setShowKeybindsDialog(true);
+          }}
+        />
+      </SettingsGroup>
+
       {/* Danger Zone */}
       <SettingsGroup title="Danger Zone">
         <SettingsItem
@@ -283,6 +301,65 @@ const Settings = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {resetting ? 'Resetting...' : 'Yes, Reset Everything'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Keybinds Dialog */}
+      <AlertDialog open={showKeybindsDialog} onOpenChange={setShowKeybindsDialog}>
+        <AlertDialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Keyboard className="h-5 w-5" />
+              Keyboard Shortcuts
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Assign a single key to quickly navigate to each page. Keys are case-insensitive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            {keybindEdits.map((kb, i) => (
+              <div key={kb.path} className="flex items-center gap-3">
+                <span className="text-sm flex-1 min-w-0 truncate">{kb.label}</span>
+                <Input
+                  className="w-16 text-center uppercase font-mono"
+                  maxLength={1}
+                  value={kb.key}
+                  onChange={(e) => {
+                    const updated = [...keybindEdits];
+                    updated[i] = { ...kb, key: e.target.value.slice(-1) };
+                    setKeybindEdits(updated);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                resetKeybinds();
+                setKeybindEdits(getKeybinds());
+                toast({ title: 'Reset', description: 'Keybinds restored to defaults' });
+              }}
+            >
+              <RotateCw className="h-3.5 w-3.5 mr-1.5" />
+              Reset defaults
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                saveKeybinds(keybindEdits);
+                toast({ title: 'Saved', description: 'Keyboard shortcuts updated. Reload to apply.' });
+                setShowKeybindsDialog(false);
+              }}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
