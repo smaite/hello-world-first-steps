@@ -81,7 +81,7 @@ const SettingsGroup = ({ title, children }: { title: string; children: React.Rea
 );
 
 const Settings = () => {
-  const { isOwner, signOut, profile, role } = useAuth();
+  const { isOwner, isSuperuser, signOut, profile, role } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -221,15 +221,17 @@ const Settings = () => {
         />
       </SettingsGroup>
 
-      {/* Subscription */}
-      <SettingsGroup title="Subscription">
-        <SettingsItem
-          icon={Crown}
-          label="Manage Subscriptions"
-          description="Create plans and assign to users"
-          onClick={() => navigate('/subscriptions')}
-        />
-      </SettingsGroup>
+      {/* Subscription - superuser only */}
+      {isSuperuser() && (
+        <SettingsGroup title="Subscription">
+          <SettingsItem
+            icon={Crown}
+            label="Manage Subscriptions"
+            description="Create plans and assign to users"
+            onClick={() => navigate('/subscriptions')}
+          />
+        </SettingsGroup>
+      )}
 
       {/* Shortcuts */}
       <SettingsGroup title="Shortcuts">
