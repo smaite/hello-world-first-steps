@@ -965,9 +965,10 @@ export type Database = {
       is_owner: { Args: never; Returns: boolean }
       is_pending: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      is_superuser: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "owner" | "manager" | "staff" | "pending"
+      app_role: "superuser" | "owner" | "manager" | "staff" | "pending"
       currency_type: "NPR" | "INR"
       payment_method: "cash" | "online"
       transaction_type: "buy" | "sell" | "credit_given" | "credit_received"
@@ -1098,7 +1099,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "manager", "staff", "pending"],
+      app_role: ["superuser", "owner", "manager", "staff", "pending"],
       currency_type: ["NPR", "INR"],
       payment_method: ["cash", "online"],
       transaction_type: ["buy", "sell", "credit_given", "credit_received"],

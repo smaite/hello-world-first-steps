@@ -41,7 +41,7 @@ interface UserSub {
 }
 
 const Subscription = () => {
-  const { isOwner } = useAuth();
+  const { isSuperuser } = useAuth();
   const { toast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [userSubs, setUserSubs] = useState<UserSub[]>([]);
@@ -150,7 +150,7 @@ const Subscription = () => {
     } finally { setSavingAssign(false); }
   };
 
-  if (!isOwner()) {
+  if (!isSuperuser()) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">You don't have permission to manage subscriptions.</p>

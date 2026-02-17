@@ -25,6 +25,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  isSuperuser: () => boolean;
   isOwner: () => boolean;
   isManager: () => boolean;
   isStaff: () => boolean;
@@ -166,13 +167,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
-  const isOwner = () => role === 'owner';
+  const isSuperuser = () => role === 'superuser';
+  const isOwner = () => role === 'owner' || role === 'superuser';
   const isManager = () => role === 'manager';
   const isStaff = () => role === 'staff';
   const isPending = () => role === 'pending';
   
   const hasPermission = (permission: string) => {
-    if (isOwner() || isManager()) return true;
+    if (isSuperuser() || isOwner() || isManager()) return true;
     return permissions.includes(permission);
   };
 
@@ -187,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signIn,
       signUp,
       signOut,
+      isSuperuser,
       isOwner,
       isManager,
       isStaff,
