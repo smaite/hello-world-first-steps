@@ -140,15 +140,16 @@ const DailyReports = () => {
 
       // Fetch all data in parallel
       const [cashTrackerRes, transactionsRes, creditTxRes, expensesRes, receivingsRes] = await Promise.all([
-        supabase.from('staff_cash_tracker').select('*').eq('date', dateStr).maybeSingle(),
+        supabase.from('staff_cash_tracker').select('*').eq('date', dateStr),
         supabase.from('transactions').select('*, customers(name)').gte('created_at', dayStart).lte('created_at', dayEnd).order('created_at', { ascending: false }),
         supabase.from('credit_transactions').select('*').gte('created_at', dayStart).lte('created_at', dayEnd),
         supabase.from('expenses').select('*').eq('expense_date', dateStr),
         supabase.from('money_receivings').select('*').gte('created_at', dayStart).lte('created_at', dayEnd),
       ]);
 
-      const cashTrackerData = cashTrackerRes.data;
-      setCashTracker(cashTrackerData);
+      const cashTrackerRecords = cashTrackerRes.data || [];
+      const cashTrackerData = cashTrackerRecords.length > 0 ? cashTrackerRecords[0] : null;
+      setCashTracker(cashTrackerRecords);
       const txList = transactionsRes.data || [];
       const creditTx = creditTxRes.data || [];
       const expenses = expensesRes.data || [];
@@ -348,42 +349,49 @@ const DailyReports = () => {
           </table>
         </div>
 
-        ${cashTracker && (cashTracker.opening_npr_denoms || cashTracker.opening_inr_denoms) ? `
+        ${cashTracker && cashTracker.length > 0 ? cashTracker.map((rec: any, idx: number) => {
+          const nprDenoms = rec.opening_npr_denoms as Record<string, number> | null;
+          const inrDenoms = rec.opening_inr_denoms as Record<string, number> | null;
+          const hasNpr = nprDenoms && Object.values(nprDenoms).some((v: any) => v > 0);
+          const hasInr = inrDenoms && Object.values(inrDenoms).some((v: any) => v > 0);
+          if (!hasNpr && !hasInr) return '';
+          return `
         <div class="summary-section">
-          <h2>Denomination Details</h2>
+          <h2>Denomination Details${cashTracker.length > 1 ? ` - Staff #${idx + 1}` : ''}</h2>
           <div class="ledger-container" style="margin-top: 10px;">
-            ${cashTracker.opening_npr_denoms && Object.keys(cashTracker.opening_npr_denoms).length > 0 ? `
+            ${hasNpr ? `
             <table class="ledger-table">
               <thead><tr><th colspan="3">Opening NPR Denominations</th></tr></thead>
               <thead><tr><th>Note</th><th>Qty</th><th>Total</th></tr></thead>
               <tbody>
-                ${NPR_DENOMS.filter(d => (cashTracker.opening_npr_denoms as Record<string, number>)[d.toString()] > 0).map(d => {
-                  const count = (cashTracker.opening_npr_denoms as Record<string, number>)[d.toString()] || 0;
+                ${NPR_DENOMS.filter(d => (nprDenoms![d.toString()] || 0) > 0).map(d => {
+                  const count = nprDenoms![d.toString()] || 0;
                   return `<tr><td class="label">${d}</td><td class="amount">${count}</td><td class="amount">${formatNum(d * count)}</td></tr>`;
                 }).join('')}
-                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(cashTracker.opening_npr_denoms as Record<string, number>).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * v, 0))}</td></tr>
+                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(nprDenoms!).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * (v as number), 0))}</td></tr>
               </tbody>
             </table>` : ''}
-            ${cashTracker.opening_inr_denoms && Object.keys(cashTracker.opening_inr_denoms).length > 0 ? `
+            ${hasInr ? `
             <table class="ledger-table">
               <thead><tr><th colspan="3">Opening INR Denominations</th></tr></thead>
               <thead><tr><th>Note</th><th>Qty</th><th>Total</th></tr></thead>
               <tbody>
-                ${INR_DENOMS.filter(d => (cashTracker.opening_inr_denoms as Record<string, number>)[d.toString()] > 0).map(d => {
-                  const count = (cashTracker.opening_inr_denoms as Record<string, number>)[d.toString()] || 0;
+                ${INR_DENOMS.filter(d => (inrDenoms![d.toString()] || 0) > 0).map(d => {
+                  const count = inrDenoms![d.toString()] || 0;
                   return `<tr><td class="label">${d}</td><td class="amount">${count}</td><td class="amount">${formatNum(d * count)}</td></tr>`;
                 }).join('')}
-                ${(cashTracker.opening_inr_denoms as Record<string, number>)['coins'] > 0 ? `<tr><td class="label">Coins</td><td class="amount">${(cashTracker.opening_inr_denoms as Record<string, number>)['coins']}</td><td class="amount">${formatNum((cashTracker.opening_inr_denoms as Record<string, number>)['coins'])}</td></tr>` : ''}
-                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(cashTracker.opening_inr_denoms as Record<string, number>).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * v, 0))}</td></tr>
+                ${(inrDenoms!['coins'] || 0) > 0 ? `<tr><td class="label">Coins</td><td class="amount">${inrDenoms!['coins']}</td><td class="amount">${formatNum(inrDenoms!['coins'])}</td></tr>` : ''}
+                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(inrDenoms!).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * (v as number), 0))}</td></tr>
               </tbody>
             </table>` : ''}
           </div>
-          ${cashTracker.closing_npr !== null ? `
+          ${rec.closing_npr !== null ? `
           <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-            <div class="stat-box"><div class="value">${formatNum(Number(cashTracker.closing_npr))}</div><div class="label">Closing NPR</div></div>
-            <div class="stat-box"><div class="value">${formatNum(Number(cashTracker.closing_inr))}</div><div class="label">Closing INR</div></div>
+            <div class="stat-box"><div class="value">${formatNum(Number(rec.closing_npr))}</div><div class="label">Closing NPR</div></div>
+            <div class="stat-box"><div class="value">${formatNum(Number(rec.closing_inr))}</div><div class="label">Closing INR</div></div>
           </div>` : ''}
-        </div>` : ''}
+        </div>`;
+        }).join('') : ''}
 
         <div class="footer">
           <p>Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm')} by ${profile?.full_name || 'System'}</p>
@@ -583,7 +591,7 @@ const DailyReports = () => {
           </div>
 
           {/* Denomination Details */}
-          {cashTracker && (cashTracker.opening_npr_denoms || cashTracker.opening_inr_denoms) && (
+          {cashTracker && cashTracker.length > 0 && (
             <Collapsible open={denomOpen} onOpenChange={setDenomOpen}>
               <Card>
                 <CollapsibleTrigger asChild>
@@ -598,29 +606,39 @@ const DailyReports = () => {
                   </CardHeader>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {/* Opening NPR Denominations */}
-                      {cashTracker.opening_npr_denoms && Object.keys(cashTracker.opening_npr_denoms).length > 0 && (
-                        <DenominationReadonly title="Opening NPR" denoms={cashTracker.opening_npr_denoms as Record<string, number>} currency="NPR" />
-                      )}
-                      {/* Opening INR Denominations */}
-                      {cashTracker.opening_inr_denoms && Object.keys(cashTracker.opening_inr_denoms).length > 0 && (
-                        <DenominationReadonly title="Opening INR" denoms={cashTracker.opening_inr_denoms as Record<string, number>} currency="INR" />
-                      )}
-                    </div>
-                    {cashTracker.closing_npr !== null && cashTracker.closing_inr !== null && (
-                      <div className="mt-4 grid grid-cols-2 gap-4">
-                        <div className="p-3 bg-muted rounded-lg">
-                          <p className="text-xs text-muted-foreground">Closing NPR</p>
-                          <p className="text-lg font-bold">{formatNum(Number(cashTracker.closing_npr))}</p>
+                  <CardContent className="space-y-6">
+                    {cashTracker.map((record: any, idx: number) => {
+                      const hasNprDenoms = record.opening_npr_denoms && typeof record.opening_npr_denoms === 'object' && Object.values(record.opening_npr_denoms).some((v: any) => v > 0);
+                      const hasInrDenoms = record.opening_inr_denoms && typeof record.opening_inr_denoms === 'object' && Object.values(record.opening_inr_denoms).some((v: any) => v > 0);
+                      if (!hasNprDenoms && !hasInrDenoms) return null;
+                      return (
+                        <div key={record.id}>
+                          {cashTracker.length > 1 && (
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Staff Record #{idx + 1}</p>
+                          )}
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {hasNprDenoms && (
+                              <DenominationReadonly title="Opening NPR" denoms={record.opening_npr_denoms as Record<string, number>} currency="NPR" />
+                            )}
+                            {hasInrDenoms && (
+                              <DenominationReadonly title="Opening INR" denoms={record.opening_inr_denoms as Record<string, number>} currency="INR" />
+                            )}
+                          </div>
+                          {record.closing_npr !== null && record.closing_inr !== null && (
+                            <div className="mt-3 grid grid-cols-2 gap-4">
+                              <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-xs text-muted-foreground">Closing NPR</p>
+                                <p className="text-lg font-bold">{formatNum(Number(record.closing_npr))}</p>
+                              </div>
+                              <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-xs text-muted-foreground">Closing INR</p>
+                                <p className="text-lg font-bold">{formatNum(Number(record.closing_inr))}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div className="p-3 bg-muted rounded-lg">
-                          <p className="text-xs text-muted-foreground">Closing INR</p>
-                          <p className="text-lg font-bold">{formatNum(Number(cashTracker.closing_inr))}</p>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </CardContent>
                 </CollapsibleContent>
               </Card>
