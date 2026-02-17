@@ -166,21 +166,21 @@ const MobileDashboard = ({ stats, exchangeRate, loading, selectedDate, onDateCha
           </>
         ) : (
           <>
-            {/* Exchange Rate + Transactions - Inline row */}
+            {/* Current Stock + Transactions - Inline row */}
             <div className="flex gap-2">
-              <div className="flex-1 bg-background rounded-xl p-2.5 shadow-sm">
+              <div className="flex-1 bg-primary rounded-xl p-2.5 shadow-sm">
                 <div className="flex items-center gap-1 mb-1">
-                  <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Rates</span>
+                  <Wallet className="h-3 w-3 text-primary-foreground/70" />
+                  <span className="text-[9px] font-medium text-primary-foreground/70 uppercase tracking-wider">Current Stock</span>
                 </div>
                 <div className="flex gap-3">
                   <div>
-                    <p className="text-[9px] text-muted-foreground">NPR→INR</p>
-                    <p className="text-sm font-bold text-foreground">1:{exchangeRate.nprToInr}</p>
+                    <p className="text-[9px] text-primary-foreground/60">NPR</p>
+                    <p className="text-sm font-bold text-primary-foreground">रू {fmt(stats.openingNpr + stats.nprIn - stats.nprOut)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground">INR→NPR</p>
-                    <p className="text-sm font-bold text-foreground">1:{exchangeRate.inrToNpr}</p>
+                    <p className="text-[9px] text-primary-foreground/60">INR</p>
+                    <p className="text-sm font-bold text-primary-foreground">₹ {fmt(stats.openingInr + stats.inrIn - stats.inrOut)}</p>
                   </div>
                 </div>
               </div>
