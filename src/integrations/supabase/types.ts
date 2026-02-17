@@ -699,6 +699,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number
+          features: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -857,6 +893,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string | null
+          starts_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
