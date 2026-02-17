@@ -141,7 +141,7 @@ const MobileBottomNav = () => {
               )}
 
               {/* Admin Items */}
-              {(role === 'owner' || role === 'manager') && (
+              {(role === 'superuser' || role === 'owner' || role === 'manager') && (
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground font-medium px-2 mb-2">Administration</p>
                   {adminItems.map((item) => (

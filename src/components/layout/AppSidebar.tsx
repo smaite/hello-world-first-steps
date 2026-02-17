@@ -176,7 +176,7 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(role === "owner" || role === "manager") && (
+        {(role === "superuser" || role === "owner" || role === "manager") && (
           <SidebarGroup>
             <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
