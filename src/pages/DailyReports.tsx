@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   CalendarIcon, 
   ChevronLeft, 
@@ -17,7 +18,9 @@ import {
   TrendingUp,
   Wallet,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  Banknote
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, addDays, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -59,6 +62,59 @@ interface Transaction {
   customers?: { name: string } | null;
 }
 
+const NPR_DENOMS = [1000, 500, 100, 50, 20, 10, 5];
+const INR_DENOMS = [500, 200, 100, 50, 20, 10];
+
+const DenominationReadonly = ({ title, denoms, currency }: { title: string; denoms: Record<string, number>; currency: 'NPR' | 'INR' }) => {
+  const denomList = currency === 'NPR' ? NPR_DENOMS : INR_DENOMS;
+  const fmt = (n: number) => new Intl.NumberFormat('en-IN').format(n);
+  const total = Object.entries(denoms).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * v, 0);
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">{title}</p>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-xs">
+          <thead className="bg-muted/60">
+            <tr>
+              <th className="py-1.5 px-2 text-left font-medium text-muted-foreground">Note</th>
+              <th className="py-1.5 px-2 text-center font-medium text-muted-foreground">Qty</th>
+              <th className="py-1.5 px-2 text-right font-medium text-muted-foreground">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {denomList.map((d) => {
+              const key = d.toString();
+              const count = denoms[key] || 0;
+              if (count === 0) return null;
+              return (
+                <tr key={key} className="border-t border-border/50">
+                  <td className="py-1 px-2 font-medium">{key}</td>
+                  <td className="py-1 px-2 text-center">{count}</td>
+                  <td className="py-1 px-2 text-right font-mono">{fmt(d * count)}</td>
+                </tr>
+              );
+            })}
+            {denoms['coins'] > 0 && (
+              <tr className="border-t border-border/50">
+                <td className="py-1 px-2 font-medium">Coins</td>
+                <td className="py-1 px-2 text-center">{denoms['coins']}</td>
+                <td className="py-1 px-2 text-right font-mono">{fmt(denoms['coins'])}</td>
+              </tr>
+            )}
+          </tbody>
+          <tfoot className="bg-primary/5">
+            <tr className="border-t">
+              <td colSpan={2} className="py-1.5 px-2 font-semibold">Total</td>
+              <td className="py-1.5 px-2 text-right font-mono font-bold">{fmt(total)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const DailyReports = () => {
   const { profile } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -68,6 +124,8 @@ const DailyReports = () => {
   const [transactionCount, setTransactionCount] = useState(0);
   const [expensesTotal, setExpensesTotal] = useState({ npr: 0, inr: 0 });
   const [receivedTotal, setReceivedTotal] = useState({ npr: 0, inr: 0 });
+  const [cashTracker, setCashTracker] = useState<any>(null);
+  const [denomOpen, setDenomOpen] = useState(false);
 
   useEffect(() => {
     fetchReportData();
@@ -89,7 +147,8 @@ const DailyReports = () => {
         supabase.from('money_receivings').select('*').gte('created_at', dayStart).lte('created_at', dayEnd),
       ]);
 
-      const cashTracker = cashTrackerRes.data;
+      const cashTrackerData = cashTrackerRes.data;
+      setCashTracker(cashTrackerData);
       const txList = transactionsRes.data || [];
       const creditTx = creditTxRes.data || [];
       const expenses = expensesRes.data || [];
@@ -149,8 +208,8 @@ const DailyReports = () => {
         }
       });
 
-      const openingNpr = cashTracker ? Number(cashTracker.opening_npr) : 0;
-      const openingInr = cashTracker ? Number(cashTracker.opening_inr) : 0;
+      const openingNpr = cashTrackerData ? Number(cashTrackerData.opening_npr) : 0;
+      const openingInr = cashTrackerData ? Number(cashTrackerData.opening_inr) : 0;
 
       const totalNprIn = openingNpr + ncToIc + chaNpr;
       const totalNprOut = icToNc + nastaKharcha + hunuParneNpr;
@@ -288,6 +347,43 @@ const DailyReports = () => {
             </tbody>
           </table>
         </div>
+
+        ${cashTracker && (cashTracker.opening_npr_denoms || cashTracker.opening_inr_denoms) ? `
+        <div class="summary-section">
+          <h2>Denomination Details</h2>
+          <div class="ledger-container" style="margin-top: 10px;">
+            ${cashTracker.opening_npr_denoms && Object.keys(cashTracker.opening_npr_denoms).length > 0 ? `
+            <table class="ledger-table">
+              <thead><tr><th colspan="3">Opening NPR Denominations</th></tr></thead>
+              <thead><tr><th>Note</th><th>Qty</th><th>Total</th></tr></thead>
+              <tbody>
+                ${NPR_DENOMS.filter(d => (cashTracker.opening_npr_denoms as Record<string, number>)[d.toString()] > 0).map(d => {
+                  const count = (cashTracker.opening_npr_denoms as Record<string, number>)[d.toString()] || 0;
+                  return `<tr><td class="label">${d}</td><td class="amount">${count}</td><td class="amount">${formatNum(d * count)}</td></tr>`;
+                }).join('')}
+                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(cashTracker.opening_npr_denoms as Record<string, number>).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * v, 0))}</td></tr>
+              </tbody>
+            </table>` : ''}
+            ${cashTracker.opening_inr_denoms && Object.keys(cashTracker.opening_inr_denoms).length > 0 ? `
+            <table class="ledger-table">
+              <thead><tr><th colspan="3">Opening INR Denominations</th></tr></thead>
+              <thead><tr><th>Note</th><th>Qty</th><th>Total</th></tr></thead>
+              <tbody>
+                ${INR_DENOMS.filter(d => (cashTracker.opening_inr_denoms as Record<string, number>)[d.toString()] > 0).map(d => {
+                  const count = (cashTracker.opening_inr_denoms as Record<string, number>)[d.toString()] || 0;
+                  return `<tr><td class="label">${d}</td><td class="amount">${count}</td><td class="amount">${formatNum(d * count)}</td></tr>`;
+                }).join('')}
+                ${(cashTracker.opening_inr_denoms as Record<string, number>)['coins'] > 0 ? `<tr><td class="label">Coins</td><td class="amount">${(cashTracker.opening_inr_denoms as Record<string, number>)['coins']}</td><td class="amount">${formatNum((cashTracker.opening_inr_denoms as Record<string, number>)['coins'])}</td></tr>` : ''}
+                <tr class="total-row"><td class="label" colspan="2">Total</td><td class="amount">${formatNum(Object.entries(cashTracker.opening_inr_denoms as Record<string, number>).reduce((s, [k, v]) => s + (k === 'coins' ? 1 : parseInt(k)) * v, 0))}</td></tr>
+              </tbody>
+            </table>` : ''}
+          </div>
+          ${cashTracker.closing_npr !== null ? `
+          <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
+            <div class="stat-box"><div class="value">${formatNum(Number(cashTracker.closing_npr))}</div><div class="label">Closing NPR</div></div>
+            <div class="stat-box"><div class="value">${formatNum(Number(cashTracker.closing_inr))}</div><div class="label">Closing INR</div></div>
+          </div>` : ''}
+        </div>` : ''}
 
         <div class="footer">
           <p>Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm')} by ${profile?.full_name || 'System'}</p>
@@ -486,7 +582,51 @@ const DailyReports = () => {
             </Card>
           </div>
 
-          {/* Today's Transactions Summary */}
+          {/* Denomination Details */}
+          {cashTracker && (cashTracker.opening_npr_denoms || cashTracker.opening_inr_denoms) && (
+            <Collapsible open={denomOpen} onOpenChange={setDenomOpen}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Banknote className="h-5 w-5 text-primary" />
+                        Denomination Details
+                      </span>
+                      <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", denomOpen && "rotate-180")} />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* Opening NPR Denominations */}
+                      {cashTracker.opening_npr_denoms && Object.keys(cashTracker.opening_npr_denoms).length > 0 && (
+                        <DenominationReadonly title="Opening NPR" denoms={cashTracker.opening_npr_denoms as Record<string, number>} currency="NPR" />
+                      )}
+                      {/* Opening INR Denominations */}
+                      {cashTracker.opening_inr_denoms && Object.keys(cashTracker.opening_inr_denoms).length > 0 && (
+                        <DenominationReadonly title="Opening INR" denoms={cashTracker.opening_inr_denoms as Record<string, number>} currency="INR" />
+                      )}
+                    </div>
+                    {cashTracker.closing_npr !== null && cashTracker.closing_inr !== null && (
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground">Closing NPR</p>
+                          <p className="text-lg font-bold">{formatNum(Number(cashTracker.closing_npr))}</p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground">Closing INR</p>
+                          <p className="text-lg font-bold">{formatNum(Number(cashTracker.closing_inr))}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
