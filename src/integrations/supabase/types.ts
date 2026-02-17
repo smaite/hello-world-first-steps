@@ -759,6 +759,50 @@ export type Database = {
         }
         Relationships: []
       }
+      system_subscription: {
+        Row: {
+          activated_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string | null
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_subscription_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           bank_account_id: string | null
