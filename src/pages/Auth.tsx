@@ -205,8 +205,8 @@ const Auth = () => {
 
     const userRole = roleData?.role;
 
-    // Owners and managers can login directly without OTP
-    if (userRole === "owner" || userRole === "manager") {
+    // Superusers, owners and managers can login directly without OTP
+    if (userRole === "superuser" || userRole === "owner" || userRole === "manager") {
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
