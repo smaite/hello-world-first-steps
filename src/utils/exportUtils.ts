@@ -75,6 +75,69 @@ export const exportTransactionsToCSV = (
   document.body.removeChild(link);
 };
 
+export const printTransactionsCompact = (
+  transactions: TransactionExportData[],
+  totals: ExportTotals,
+  dateLabel: string
+): void => {
+  const rows = transactions.map(t => `
+    <tr>
+      <td>${t.from_amount.toLocaleString()}</td>
+      <td>${t.exchange_rate}</td>
+      <td>${t.from_currency === 'NPR' ? t.from_amount.toLocaleString() : ''}</td>
+      <td>${t.from_currency === 'INR' ? t.from_amount.toLocaleString() : ''}</td>
+      <td>${t.exchange_rate}</td>
+      <td>${t.to_currency === 'NPR' ? t.to_amount.toLocaleString() : ''}</td>
+      <td>${t.to_currency === 'INR' ? t.to_amount.toLocaleString() : ''}</td>
+      <td>${t.exchange_rate}</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html><html><head><title>Transactions - ${dateLabel}</title>
+<style>
+*{margin:0;padding:0}
+@page{size:A4 portrait;margin:8mm}
+body{font-family:monospace;font-size:10px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #000;padding:2px 4px;text-align:right;white-space:nowrap}
+th{font-weight:bold;background:#f0f0f0}
+.title{text-align:center;font-size:12px;font-weight:bold;margin-bottom:4px}
+.sub{text-align:center;font-size:9px;margin-bottom:6px}
+.totals td{font-weight:bold;border-top:2px solid #000}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="title">${dateLabel} - ${transactions.length} Txns</div>
+<div class="sub">Generated: ${format(new Date(), 'dd/MM/yy HH:mm')}</div>
+<table>
+<thead><tr>
+<th>From Amt</th><th>Rate</th><th>NPR In</th><th>INR In</th><th>Rate</th><th>NPR Out</th><th>INR Out</th><th>Rate</th>
+</tr></thead>
+<tbody>${rows}</tbody>
+<tfoot>
+<tr class="totals">
+<td></td><td></td>
+<td>${totals.nprIn.toLocaleString()}</td>
+<td>${totals.inrIn.toLocaleString()}</td>
+<td></td>
+<td>${totals.nprOut.toLocaleString()}</td>
+<td>${totals.inrOut.toLocaleString()}</td>
+<td></td>
+</tr>
+<tr class="totals">
+<td colspan="2" style="text-align:left">TOTAL IC</td>
+<td colspan="2">${(totals.nprIn + totals.inrIn).toLocaleString()}</td>
+<td colspan="2" style="text-align:left">TOTAL OC</td>
+<td colspan="2">${(totals.nprOut + totals.inrOut).toLocaleString()}</td>
+</tr>
+</tfoot>
+</table>
+<script>window.onload=function(){window.print()}</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+};
+
 export const printTransactionsSheet = (
   transactions: TransactionExportData[],
   totals: ExportTotals,

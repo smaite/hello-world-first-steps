@@ -8,14 +8,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
-import { FileText, CalendarIcon, ArrowDownRight, ArrowUpRight, Download, Printer, Search } from 'lucide-react';
+import { FileText, CalendarIcon, ArrowDownRight, ArrowUpRight, Download, Printer, Search, TableProperties } from 'lucide-react';
 import { TransactionViewDialog } from '@/components/transactions/TransactionViewDialog';
 import { TransactionEditDialog } from '@/components/transactions/TransactionEditDialog';
 import { TransactionCard } from '@/components/transactions/TransactionCard';
 import { DailyLedgerReport } from '@/components/transactions/DailyLedgerReport';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { exportTransactionsToCSV, printTransactionsSheet } from '@/utils/exportUtils';
+import { exportTransactionsToCSV, printTransactionsSheet, printTransactionsCompact } from '@/utils/exportUtils';
 import { CardListSkeleton, StatCardsSkeleton } from '@/components/ui/page-skeleton';
 
 interface Transaction {
@@ -206,6 +206,16 @@ const Transactions = () => {
           >
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">CSV</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => printTransactionsCompact(filtered, totals, getDateLabel())}
+            disabled={filtered.length === 0}
+            className="gap-2"
+            title="Compact print - saves paper & ink"
+          >
+            <TableProperties className="h-4 w-4" />
+            <span className="hidden sm:inline">Compact</span>
           </Button>
           <Button 
             variant="outline" 
